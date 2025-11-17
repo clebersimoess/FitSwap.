@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { User, Award, Check } from "lucide-react";
@@ -19,10 +18,14 @@ export default function AccountTypeSelector() {
 
     setIsUpdating(true);
     try {
-      await base44.auth.updateMe({
-        account_type: selectedType,
-        onboarding_completed: true
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          account_type: selectedType,
+          onboarding_completed: true
+        }
       });
+
+      if (error) throw error;
 
       navigate(createPageUrl("Home"));
     } catch (error) {
@@ -116,96 +119,4 @@ export default function AccountTypeSelector() {
               <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
                 selectedType === "instructor" ? "bg-gradient-to-br from-[#FF6B35] to-[#FF006E]" : "bg-white/20"
               }`}>
-                <Award className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className={`text-xl font-bold ${
-                    selectedType === "instructor" ? "text-gray-900" : "text-white"
-                  }`}>
-                    Instrutor
-                  </h3>
-                  {selectedType === "instructor" && (
-                    <Check className="w-6 h-6 text-[#FF6B35]" />
-                  )}
-                </div>
-                <p className={`text-sm ${
-                  selectedType === "instructor" ? "text-gray-600" : "text-white/80"
-                }`}>
-                  Para profissionais de educação física que querem captar e gerenciar alunos
-                </p>
-                <div className="mt-3 space-y-1">
-                  <div className={`text-xs flex items-center gap-2 ${
-                    selectedType === "instructor" ? "text-gray-700" : "text-white/70"
-                  }`}>
-                    <span className="text-base">✓</span>
-                    <span>Painel de instrutor</span>
-                  </div>
-                  <div className={`text-xs flex items-center gap-2 ${
-                    selectedType === "instructor" ? "text-gray-700" : "text-white/70"
-                  }`}>
-                    <span className="text-base">✓</span>
-                    <span>Criar desafios privados</span>
-                  </div>
-                  <div className={`text-xs flex items-center gap-2 ${
-                    selectedType === "instructor" ? "text-gray-700" : "text-white/70"
-                  }`}>
-                    <span className="text-base">✓</span>
-                    <span>Dashboard de alunos</span>
-                  </div>
-                  <div className={`text-xs flex items-center gap-2 ${
-                    selectedType === "instructor" ? "text-gray-700" : "text-white/70"
-                  }`}>
-                    <span className="text-base">✓</span>
-                    <span>Buscar novos clientes</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </button>
-        </div>
-
-        <Button
-          onClick={handleConfirm}
-          disabled={!selectedType || isUpdating}
-          className="w-full h-14 text-lg font-bold bg-white text-[#FF6B35] hover:bg-white/90 disabled:opacity-50"
-        >
-          {isUpdating ? "Salvando..." : "Continuar"}
-        </Button>
-
-        <p className="text-center text-white/70 text-xs mt-4">
-          Você poderá alterar o tipo de conta depois nas configurações
-        </p>
-
-        {/* Legal Links */}
-        <div className="text-center text-white/80 text-xs mt-6 space-y-2">
-          <p>
-            Ao cadastrar e usar o FitSwap, você concorda com nossos{" "}
-            <button
-              onClick={() => navigate(createPageUrl("TermsOfService"))}
-              className="underline font-semibold hover:text-white"
-            >
-              Termos de Uso
-            </button>
-            {" "}e{" "}
-            <button
-              onClick={() => navigate(createPageUrl("PrivacyPolicy"))}
-              className="underline font-semibold hover:text-white"
-            >
-              Política de Privacidade
-            </button>
-          </p>
-          <p>
-            Dúvidas? Entre em contato:{" "}
-            <a 
-              href="mailto:clebersimoessilva@gmail.com"
-              className="underline font-semibold hover:text-white"
-            >
-              clebersimoessilva@gmail.com
-            </a>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+                <Award className="w-7 h-7 text
