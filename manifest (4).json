@@ -1,0 +1,46 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "fitswap",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "fitswap",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/690a8aa464e2b1883929d875/7b293487d_logo.png",
+      "type": "image/jpeg",
+      "sizes": "480x480",
+      "isSquare": true,
+      "isPng": true,
+      "isWebp": false,
+      "isJpg": true,
+      "width": 480,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    },
+    {
+      "src": "https://fitswap.org/favicon.ico",
+      "type": "image/x-icon",
+      "sizes": "480x480",
+      "isSquare": true,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 480,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "display_override": [
+    "standalone",
+    "window-controls-overlay",
+    "browser",
+    "fullscreen",
+    "minimal-ui"
+  ]
+}
