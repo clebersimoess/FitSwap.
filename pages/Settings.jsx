@@ -1,292 +1,352 @@
-
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import {
-  X,
-  User,
-  Lock,
-  Bell,
-  LogOut,
-  Trash2,
-  ChevronRight,
-  Shield,
-  Moon,
-  FileText,
-  HelpCircle
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
+import { ArrowLeft, User, Bell, Shield, HelpCircle, LogOut } from "lucide-react";
 
 export default function Settings() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient(); // Initialize queryClient
-  const [currentUser, setCurrentUser] = useState(null);
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [privateProfile, setPrivateProfile] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [user, setUser] = useState(null);
+  const [activeSection, setActiveSection] = useState("profile");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
-      } catch (error) {
-        console.log("User not logged in");
-        // Optionally navigate to login or show an error
-      }
-    };
-    getUser();
+    loadUser();
   }, []);
 
-  const handleLogout = async () => {
+  const loadUser = async () => {
     try {
-      // Clear all local data first
-      queryClient.clear();
-      
-      // Logout and redirect to login
-      await base44.auth.logout(window.location.origin);
+      const { data: { user: userData }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      setUser(userData);
     } catch (error) {
-      console.error("Logout error:", error);
-      
-      // Force complete reload to clear all state and redirect to login
-      window.location.href = window.location.origin;
+      console.error("Erro ao carregar usuário:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteAccount = async () => {
-    alert("Funcionalidade em desenvolvimento");
-    setShowDeleteDialog(false);
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate(createPageUrl("Welcome"));
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      alert("Erro ao sair. Tente novamente.");
+    }
   };
 
-  if (!currentUser) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF6B35] border-t-transparent"></div>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#FF6B35] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
       </div>
     );
   }
 
-  const settingsSections = [
-    {
-      title: "Conta",
-      items: [
-        {
-          icon: User,
-          label: "Editar Perfil",
-          onClick: () => navigate(createPageUrl("EditProfile")),
-          showArrow: true
-        },
-        {
-          icon: Shield,
-          label: "Privacidade",
-          description: "Perfil privado",
-          toggle: true,
-          value: privateProfile,
-          onChange: setPrivateProfile
-        }
-      ]
-    },
-    {
-      title: "Notificações",
-      items: [
-        {
-          icon: Bell,
-          label: "Notificações Push",
-          description: "Receber notificações no celular",
-          toggle: true,
-          value: pushNotifications,
-          onChange: setPushNotifications
-        },
-        {
-          icon: Bell,
-          label: "Notificações por Email",
-          description: "Receber emails de atividades",
-          toggle: true,
-          value: emailNotifications,
-          onChange: setEmailNotifications
-        }
-      ]
-    },
-    {
-      title: "Aparência",
-      items: [
-        {
-          icon: Moon,
-          label: "Modo Escuro",
-          description: "Em breve",
-          toggle: true,
-          value: false,
-          onChange: () => {},
-          disabled: true
-        }
-      ]
-    },
-    {
-      title: "Legal e Ajuda",
-      items: [
-        {
-          icon: FileText,
-          label: "Termos de Uso",
-          onClick: () => navigate(createPageUrl("TermsOfService")),
-          showArrow: true
-        },
-        {
-          icon: FileText,
-          label: "Política de Privacidade",
-          onClick: () => navigate(createPageUrl("PrivacyPolicy")),
-          showArrow: true
-        },
-        {
-          icon: HelpCircle,
-          label: "Ajuda com Permissões",
-          description: "Câmera e galeria",
-          onClick: () => navigate(createPageUrl("PermissionsHelp")),
-          showArrow: true
-        }
-      ]
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 bg-white border-b border-gray-200 z-40">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={() => navigate(createPageUrl("Profile"))}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="w-6 h-6 text-gray-700" />
-          </button>
-          <h1 className="text-lg font-semibold text-gray-900">Configurações</h1>
-          <div className="w-10"></div>
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => navigate(createPageUrl("Home"))}
+              className="w-10 h-10 bg-gradient-to-br from-[#FF6B35] to-[#FF006E] rounded-full flex items-center justify-center"
+            >
+              <span className="text-white font-bold text-lg">F</span>
+            </button>
+            
+            <button 
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="font-medium">Voltar</span>
+            </button>
+            
+            <h1 className="text-xl font-bold text-gray-900">Configurações</h1>
+          </div>
         </div>
       </header>
 
-      <div className="p-4 space-y-6 pb-24">
-        {/* Profile Card */}
-        <div className="bg-white rounded-2xl p-4 flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF006E] flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-            {currentUser.profile_photo ? (
-              <img src={currentUser.profile_photo} alt={currentUser.full_name || 'User'} className="w-full h-full object-cover" />
-            ) : (
-              currentUser.full_name?.[0]?.toUpperCase() || 'U'
-            )}
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-gray-900">{currentUser.full_name}</p>
-            <p className="text-sm text-gray-500">{currentUser.email}</p>
-          </div>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <nav className="bg-white rounded-2xl shadow-sm border p-4 space-y-2">
+              <button
+                onClick={() => setActiveSection("profile")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                  activeSection === "profile" 
+                    ? "bg-[#FF6B35] text-white" 
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <User className="w-5 h-5" />
+                <span className="font-medium">Perfil</span>
+              </button>
 
-        {settingsSections.map((section, idx) => (
-          <div key={idx}>
-            <h2 className="text-sm font-semibold text-gray-500 uppercase mb-3 px-2">
-              {section.title}
-            </h2>
-            <div className="bg-white rounded-2xl overflow-hidden">
-              {section.items.map((item, itemIdx) => (
+              <button
+                onClick={() => setActiveSection("notifications")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                  activeSection === "notifications" 
+                    ? "bg-[#FF6B35] text-white" 
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <Bell className="w-5 h-5" />
+                <span className="font-medium">Notificações</span>
+              </button>
+
+              <button
+                onClick={() => setActiveSection("privacy")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                  activeSection === "privacy" 
+                    ? "bg-[#FF6B35] text-white" 
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <Shield className="w-5 h-5" />
+                <span className="font-medium">Privacidade</span>
+              </button>
+
+              <button
+                onClick={() => setActiveSection("help")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                  activeSection === "help" 
+                    ? "bg-[#FF6B35] text-white" 
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <HelpCircle className="w-5 h-5" />
+                <span className="font-medium">Ajuda</span>
+              </button>
+
+              <div className="border-t pt-2 mt-2">
                 <button
-                  key={itemIdx}
-                  onClick={item.onClick}
-                  disabled={item.disabled}
-                  className={`w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors ${
-                    itemIdx !== section.items.length - 1 ? 'border-b border-gray-100' : ''
-                  } ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-red-600 hover:bg-red-50 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-5 h-5 text-gray-600" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-medium text-gray-900">{item.label}</p>
-                    {item.description && (
-                      <p className="text-sm text-gray-500">{item.description}</p>
-                    )}
-                  </div>
-                  {item.toggle ? (
-                    <Switch
-                      checked={item.value}
-                      onCheckedChange={item.onChange}
-                      disabled={item.disabled}
-                    />
-                  ) : item.showArrow ? (
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                  ) : null}
+                  <LogOut className="w-5 h-5" />
+                  <span className="font-medium">Sair</span>
                 </button>
-              ))}
+              </div>
+            </nav>
+          </div>
+
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-2xl shadow-sm border p-6">
+              {activeSection === "profile" && (
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Configurações do Perfil</h2>
+                  
+                  <div className="space-y-6">
+                    {/* Profile Photo */}
+                    <div className="flex items-center gap-6">
+                      <div className="w-20 h-20 bg-gradient-to-br from-[#FF6B35] to-[#FF006E] rounded-full flex items-center justify-center">
+                        <User className="w-8 h-8 text-white" />
+                      </div>
+                      <div>
+                        <Button variant="outline" className="mb-2">
+                          Alterar Foto
+                        </Button>
+                        <p className="text-sm text-gray-500">JPG, GIF ou PNG. Máx. 5MB.</p>
+                      </div>
+                    </div>
+
+                    {/* User Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Nome de Usuário
+                        </label>
+                        <input
+                          type="text"
+                          defaultValue={user?.email?.split('@')[0]}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          defaultValue={user?.email}
+                          disabled
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Bio
+                        </label>
+                        <textarea
+                          rows={3}
+                          placeholder="Conte um pouco sobre você..."
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Tipo de Conta
+                        </label>
+                        <div className="px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-700">
+                          {user?.user_metadata?.account_type || "Usuário"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4 pt-4">
+                      <Button className="bg-[#FF6B35] hover:bg-[#FF5A25]">
+                        Salvar Alterações
+                      </Button>
+                      <Button variant="outline">
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeSection === "notifications" && (
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Configurações de Notificação</h2>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 border rounded-xl">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Notificações por Email</h3>
+                        <p className="text-sm text-gray-600">Receba atualizações por email</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" defaultChecked />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6B35]"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-xl">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Notificações Push</h3>
+                        <p className="text-sm text-gray-600">Receba notificações no navegador</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" defaultChecked />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6B35]"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-xl">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Novos Seguidores</h3>
+                        <p className="text-sm text-gray-600">Seja notificado quando alguém te seguir</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" defaultChecked />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6B35]"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeSection === "privacy" && (
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Privacidade e Segurança</h2>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 border rounded-xl">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Perfil Público</h3>
+                        <p className="text-sm text-gray-600">Qualquer pessoa pode ver seu perfil</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" defaultChecked />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6B35]"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-xl">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Conta Privada</h3>
+                        <p className="text-sm text-gray-600">Aprovar seguidores manualmente</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6B35]"></div>
+                      </label>
+                    </div>
+
+                    <div className="p-4 border rounded-xl">
+                      <h3 className="font-medium text-gray-900 mb-4">Alterar Senha</h3>
+                      <div className="space-y-4">
+                        <input
+                          type="password"
+                          placeholder="Senha atual"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
+                        />
+                        <input
+                          type="password"
+                          placeholder="Nova senha"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
+                        />
+                        <input
+                          type="password"
+                          placeholder="Confirmar nova senha"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
+                        />
+                        <Button className="bg-[#FF6B35] hover:bg-[#FF5A25]">
+                          Alterar Senha
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeSection === "help" && (
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Ajuda e Suporte</h2>
+                  <div className="space-y-6">
+                    <div className="p-6 border rounded-xl">
+                      <h3 className="font-medium text-gray-900 mb-2">Central de Ajuda</h3>
+                      <p className="text-gray-600 mb-4">Encontre respostas para perguntas frequentes</p>
+                      <Button variant="outline">Acessar Central de Ajuda</Button>
+                    </div>
+
+                    <div className="p-6 border rounded-xl">
+                      <h3 className="font-medium text-gray-900 mb-2">Contato</h3>
+                      <p className="text-gray-600 mb-2">Email de suporte:</p>
+                      <a 
+                        href="mailto:clebersimoessilva@gmail.com"
+                        className="text-[#FF6B35] hover:underline font-medium"
+                      >
+                        clebersimoessilva@gmail.com
+                      </a>
+                    </div>
+
+                    <div className="p-6 border rounded-xl">
+                      <h3 className="font-medium text-gray-900 mb-2">Sobre o FitSwap</h3>
+                      <p className="text-gray-600 mb-2">Versão: 1.0.0</p>
+                      <p className="text-gray-600">
+                        FitSwap - Conectando entusiastas do fitness em uma comunidade vibrante.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        ))}
-
-        <div>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase mb-3 px-2">
-            Zona de Perigo
-          </h2>
-          <div className="bg-white rounded-2xl overflow-hidden">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
-            >
-              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                <LogOut className="w-5 h-5 text-orange-600" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium text-orange-600">Sair da Conta</p>
-              </div>
-            </button>
-            <button
-              onClick={() => setShowDeleteDialog(true)}
-              className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <Trash2 className="w-5 h-5 text-red-600" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium text-red-600">Deletar Conta</p>
-                <p className="text-sm text-gray-500">Esta ação não pode ser desfeita</p>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        <div className="text-center text-sm text-gray-400 pt-4">
-          FitSwap v1.0.0
         </div>
       </div>
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Deletar sua conta?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação é permanente e não pode ser desfeita. Todos os seus treinos,
-              stories e dados serão perdidos para sempre.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteAccount}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Sim, deletar minha conta
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
