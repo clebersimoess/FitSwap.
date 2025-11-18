@@ -1,5 +1,6 @@
+```javascript
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Filter, Star, TrendingUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,13 @@ export default function MarketplacePlans() {
   const { data: plans = [], isLoading } = useQuery({
     queryKey: ['marketplacePlans'],
     queryFn: async () => {
-      return await base44.entities.WorkoutPlan.filter({ active: true }, '-subscribers_count');
+      const { data, error } = await supabase
+        .from('workout_plans')
+        .select('*')
+        .eq('active', true);
+      
+      if (error) throw error;
+      return data || [];
     },
     initialData: []
   });
@@ -167,3 +174,4 @@ export default function MarketplacePlans() {
     </div>
   );
 }
+```
