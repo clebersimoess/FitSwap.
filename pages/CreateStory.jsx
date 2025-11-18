@@ -67,7 +67,7 @@ export default function CreateStory() {
 
       if (error) throw error
 
-      // ✅ Obter URL pública
+      
       const { data: { publicUrl } } = supabase.storage
         .from(bucket)
         .getPublicUrl(fileName)
