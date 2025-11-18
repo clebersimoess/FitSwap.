@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { X, Check, Camera, Image as ImageIcon, Type, Smile, AlertCircle, Video, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { supabase } from "@/supabaseClient"; // ✅ LINHA 7 - Mudar import
+import { supabase } from "@/supabaseClient"; // 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,7 @@ export default function CreateStory() {
 
   const createStoryMutation = useMutation({
     mutationFn: async (storyData) => {
-      // ✅ LINHA 38 - Mudar entities.create() para supabase.from().insert()
+       Mudar entities.create() para supabase.from().insert()
       const { data, error } = await supabase
         .from('stories')
         .insert(storyData)
@@ -55,7 +55,7 @@ export default function CreateStory() {
 
     setIsUploading(true)
     try {
-      // ✅ LINHA 56 - Upload no Supabase Storage
+       - Upload no Supabase Storage
       const file = files[0]
       const fileExt = file.name.split('.').pop()
       const fileName = `${Math.random()}.${fileExt}`
@@ -119,7 +119,7 @@ export default function CreateStory() {
         // Upload recorded video
         setIsUploading(true)
         try {
-          // ✅ LINHA 108 - Upload do vídeo gravado
+           - Upload do vídeo gravado
           const fileExt = 'webm'
           const fileName = `${Math.random()}.${fileExt}`
           
