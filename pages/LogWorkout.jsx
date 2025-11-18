@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { ArrowLeft, Camera, Plus, Trash2, Award, Upload } from "lucide-react"; // Added Upload icon
+import { ArrowLeft, Camera, Plus, Trash2, Award, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,13 +24,13 @@ export default function LogWorkout() {
   const [notes, setNotes] = useState("");
   const [feeling, setFeeling] = useState("Bom");
   const [isUploading, setIsUploading] = useState(false);
-  const cameraInputRef = useRef(null); // Changed from photoInputRef
-  const galleryInputRef = useRef(null); // New ref for gallery
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
       } catch (error) {
         console.log("User not logged in");
@@ -43,11 +42,21 @@ export default function LogWorkout() {
   const handlePhotoUpload = async (file) => {
     setIsUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setProofPhoto(file_url);
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('workout-proofs')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('workout-proofs')
+        .getPublicUrl(fileName);
+
+      setProofPhoto(publicUrl);
     } catch (error) {
       console.error("Error uploading photo:", error);
-      alert("Erro ao fazer upload da foto. Tente novamente."); // Added alert
+      alert("Erro ao fazer upload da foto. Tente novamente.");
     }
     setIsUploading(false);
   };
@@ -67,49 +76,78 @@ export default function LogWorkout() {
   };
 
   const checkAndUnlockAchievements = async (userEmail) => {
-    const logs = await base44.entities.WorkoutLog.filter({ user_email: userEmail });
-    const achievements = await base44.entities.Achievement.filter({ user_email: userEmail });
-    
+    const { data: logs, error: logsError } = await supabase
+      .from('workout_logs')
+      .select('*')
+      .eq('user_email', userEmail);
+
+    if (logsError) throw logsError;
+
+    const { data: achievements, error: achievementsError } = await supabase
+      .from('achievements')
+      .select('*')
+      .eq('user_email', userEmail);
+
+    if (achievementsError) throw achievementsError;
+
     // Primeira conquista: Primeiro treino
     if (logs.length === 1 && achievements.length === 0) {
-      await base44.entities.Achievement.create({
-        user_email: userEmail,
-        type: "medal",
-        title: "Primeira Jornada",
-        description: "Complete seu primeiro treino",
-        icon: "🏅",
-        rarity: "Bronze",
-        points: 10,
-        unlocked_at: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('achievements')
+        .insert({
+          user_email: userEmail,
+          type: "medal",
+          title: "Primeira Jornada",
+          description: "Complete seu primeiro treino",
+          icon: "🏅",
+          rarity: "Bronze",
+          points: 10,
+          unlocked_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
     }
 
     // 10 treinos
     if (logs.length === 10) {
-      await base44.entities.Achievement.create({
-        user_email: userEmail,
-        type: "trophy",
-        title: "Dedicação",
-        description: "Complete 10 treinos",
-        icon: "🏆",
-        rarity: "Prata",
-        points: 50,
-        unlocked_at: new Date().toISOString()
-      });
+      const hasAchievement = achievements.some(a => a.title === "Dedicação");
+      if (!hasAchievement) {
+        const { error } = await supabase
+          .from('achievements')
+          .insert({
+            user_email: userEmail,
+            type: "trophy",
+            title: "Dedicação",
+            description: "Complete 10 treinos",
+            icon: "🏆",
+            rarity: "Prata",
+            points: 50,
+            unlocked_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+      }
     }
 
     // 50 treinos
     if (logs.length === 50) {
-      await base44.entities.Achievement.create({
-        user_email: userEmail,
-        type: "trophy",
-        title: "Guerreiro Fitness",
-        description: "Complete 50 treinos",
-        icon: "👑",
-        rarity: "Ouro",
-        points: 200,
-        unlocked_at: new Date().toISOString()
-      });
+      const hasAchievement = achievements.some(a => a.title === "Guerreiro Fitness");
+      if (!hasAchievement) {
+        const { error } = await supabase
+          .from('achievements')
+          .insert({
+            user_email: userEmail,
+            type: "trophy",
+            title: "Guerreiro Fitness",
+            description: "Complete 50 treinos",
+            icon: "👑",
+            rarity: "Ouro",
+            points: 200,
+            unlocked_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+      }
     }
 
     // Streak de 7 dias
@@ -126,16 +164,20 @@ export default function LogWorkout() {
       if (hasStreak) {
         const hasStreakAchievement = achievements.some(a => a.title === "Sequência de Fogo");
         if (!hasStreakAchievement) {
-          await base44.entities.Achievement.create({
-            user_email: userEmail,
-            type: "streak",
-            title: "Sequência de Fogo",
-            description: "7 dias consecutivos de treino",
-            icon: "🔥",
-            rarity: "Ouro",
-            points: 100,
-            unlocked_at: new Date().toISOString()
-          });
+          const { error } = await supabase
+            .from('achievements')
+            .insert({
+              user_email: userEmail,
+              type: "streak",
+              title: "Sequência de Fogo",
+              description: "7 dias consecutivos de treino",
+              icon: "🔥",
+              rarity: "Ouro",
+              points: 100,
+              unlocked_at: new Date().toISOString()
+            });
+
+          if (error) throw error;
         }
       }
     }
@@ -143,7 +185,12 @@ export default function LogWorkout() {
 
   const logWorkoutMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.WorkoutLog.create(data);
+      const { error } = await supabase
+        .from('workout_logs')
+        .insert(data);
+
+      if (error) throw error;
+
       await checkAndUnlockAchievements(data.user_email);
     },
     onSuccess: () => {
@@ -295,7 +342,7 @@ export default function LogWorkout() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3"> {/* New grid for two buttons */}
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => cameraInputRef.current?.click()}
@@ -328,14 +375,14 @@ export default function LogWorkout() {
               ref={cameraInputRef}
               type="file"
               accept="image/*"
-              capture="environment" // This attribute activates the camera directly on mobile
+              capture="environment"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
                   handlePhotoUpload(file);
                 }
-                e.target.value = ''; // Clear input value to allow re-uploading the same file
+                e.target.value = '';
               }}
             />
 
@@ -350,7 +397,7 @@ export default function LogWorkout() {
                 if (file) {
                   handlePhotoUpload(file);
                 }
-                e.target.value = ''; // Clear input value to allow re-uploading the same file
+                e.target.value = '';
               }}
             />
           </div>
