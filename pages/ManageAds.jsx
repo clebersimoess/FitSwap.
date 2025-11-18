@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Eye, MousePointer, AlertCircle, CheckCircle, Clock, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -36,16 +36,22 @@ export default function ManageAds() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
 
-        if (user.account_type !== 'comercial') {
+        if (user?.user_metadata?.account_type !== 'comercial') {
           navigate(createPageUrl("BusinessSetup"));
           return;
         }
 
-        const profiles = await base44.entities.BusinessProfile.filter({ user_email: user.email });
-        if (profiles.length > 0) {
+        const { data: profiles, error } = await supabase
+          .from('business_profiles')
+          .select('*')
+          .eq('user_email', user.email);
+
+        if (error) throw error;
+
+        if (profiles && profiles.length > 0) {
           setBusinessProfile(profiles[0]);
           setPhone(profiles[0].phone || "");
           setAddress(profiles[0].address || "");
@@ -63,7 +69,14 @@ export default function ManageAds() {
     queryKey: ['myAds', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      return await base44.entities.Advertisement.filter({ business_email: currentUser.email }, '-created_date');
+      const { data, error } = await supabase
+        .from('advertisements')
+        .select('*')
+        .eq('business_email', currentUser.email)
+        .order('created_date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!currentUser?.email,
     initialData: []
@@ -71,13 +84,19 @@ export default function ManageAds() {
 
   const createAdMutation = useMutation({
     mutationFn: async (adData) => {
-      return await base44.entities.Advertisement.create({
-        ...adData,
-        submitted_at: new Date().toISOString(),
-        approval_status: 'pending',
-        verified: false,
-        active: false
-      });
+      const { data, error } = await supabase
+        .from('advertisements')
+        .insert({
+          ...adData,
+          submitted_at: new Date().toISOString(),
+          approval_status: 'pending',
+          verified: false,
+          active: false
+        })
+        .select();
+      
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['myAds']);
@@ -90,8 +109,18 @@ export default function ManageAds() {
   const handleImageUpload = async (file) => {
     setIsUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setImageUrl(file_url);
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('ad-images')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('ad-images')
+        .getPublicUrl(fileName);
+
+      setImageUrl(publicUrl);
     } catch (error) {
       console.error("Error uploading image:", error);
       alert("Erro ao fazer upload da imagem");
