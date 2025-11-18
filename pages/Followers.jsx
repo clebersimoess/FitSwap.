@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Users, UserPlus } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -19,92 +19,123 @@ export default function Followers() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUser(user)
       } catch (error) {
-        console.log("User not logged in");
+        console.log("User not logged in")
       }
-    };
-    getUser();
-  }, []);
+    }
+    getUser()
+  }, [])
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['allUsers'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+      
+      if (error) throw error
+      return data || []
+    },
     staleTime: 5 * 60 * 1000
-  });
+  })
 
   const { data: followers = [] } = useQuery({
     queryKey: ['followers', userEmail],
     queryFn: async () => {
-      if (!userEmail) return [];
-      const follows = await base44.entities.Follow.filter({ following_email: userEmail });
+      if (!userEmail) return []
+      const { data: follows, error } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('following_email', userEmail)
+      
+      if (error) throw error
       
       return follows.map(follow => {
-        const user = allUsers.find(u => u.email === follow.follower_email);
+        const user = allUsers.find(u => u.email === follow.follower_email)
         return {
           ...follow,
           user: user
-        };
-      });
+        }
+      })
     },
     enabled: !!userEmail && allUsers.length > 0,
     initialData: []
-  });
+  })
 
   const { data: following = [] } = useQuery({
     queryKey: ['following', userEmail],
     queryFn: async () => {
-      if (!userEmail) return [];
-      const follows = await base44.entities.Follow.filter({ follower_email: userEmail });
+      if (!userEmail) return []
+      const { data: follows, error } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('follower_email', userEmail)
+      
+      if (error) throw error
       
       return follows.map(follow => {
-        const user = allUsers.find(u => u.email === follow.following_email);
+        const user = allUsers.find(u => u.email === follow.following_email)
         return {
           ...follow,
           user: user
-        };
-      });
+        }
+      })
     },
     enabled: !!userEmail && allUsers.length > 0,
     initialData: []
-  });
+  })
 
   const { data: myFollows = [] } = useQuery({
     queryKey: ['myFollows', currentUser?.email],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Follow.filter({ follower_email: currentUser.email });
+      if (!currentUser?.email) return []
+      const { data, error } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('follower_email', currentUser.email)
+      
+      if (error) throw error
+      return data || []
     },
     enabled: !!currentUser?.email,
     initialData: []
-  });
+  })
 
   const followMutation = useMutation({
     mutationFn: async (userToFollow) => {
-      await base44.entities.Follow.create({
-        follower_email: currentUser.email,
-        following_email: userToFollow.email
-      });
+      const { error: followError } = await supabase
+        .from('follows')
+        .insert({
+          follower_email: currentUser.email,
+          following_email: userToFollow.email
+        })
+      
+      if (followError) throw followError
 
-      await base44.entities.Notification.create({
-        user_email: userToFollow.email,
-        type: "follow",
-        from_user_name: currentUser.full_name,
-        from_user_email: currentUser.email,
-        text: "começou a te seguir"
-      });
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_email: userToFollow.email,
+          type: "follow",
+          from_user_name: currentUser.user_metadata?.full_name,
+          from_user_email: currentUser.email,
+          text: "começou a te seguir"
+        })
+      
+      if (notificationError) throw notificationError
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['myFollows']);
+      queryClient.invalidateQueries(['myFollows'])
     }
-  });
+  })
 
   const isFollowingUser = (userEmail) => {
-    return myFollows.some(f => f.following_email === userEmail);
-  };
+    return myFollows.some(f => f.following_email === userEmail)
+  }
 
-  const isOwnProfile = currentUser?.email === userEmail;
+  const isOwnProfile = currentUser?.email === userEmail
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -155,7 +186,7 @@ export default function Followers() {
                     className="flex items-center justify-between p-4 bg-white rounded-xl"
                   >
                     <Link
-                      to={`${createPageUrl('UserProfile')}?id=${follow.user?.id}`}
+                      to={`${createPageUrl('UserProfile')}?email=${follow.user?.email}`}
                       className="flex items-center gap-3 flex-1"
                     >
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF006E] flex items-center justify-center text-white font-bold flex-shrink-0">
@@ -208,7 +239,7 @@ export default function Followers() {
                 {following.map((follow) => (
                   <Link
                     key={follow.id}
-                    to={`${createPageUrl('UserProfile')}?id=${follow.user?.id}`}
+                    to={`${createPageUrl('UserProfile')}?email=${follow.user?.email}`}
                     className="flex items-center gap-3 p-4 bg-white rounded-xl hover:bg-gray-50 transition-colors"
                   >
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF006E] flex items-center justify-center text-white font-bold flex-shrink-0">
@@ -238,5 +269,5 @@ export default function Followers() {
         </Tabs>
       </div>
     </div>
-  );
+  )
 }
