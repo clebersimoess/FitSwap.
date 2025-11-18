@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/supabaseClient"; // ✅ LINHA 2 - Mudar import
+import { supabase } from "@/supabaseClient"; // 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trophy, Plus, Users, Calendar, Target, Camera, Award, MoreVertical, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,7 +33,7 @@ export default function Challenges() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        // ✅ LINHA 28 - Mudar auth.me() para auth.getUser()
+       
         const { data: { user } } = await supabase.auth.getUser()
         setCurrentUser(user)
       } catch (error) {
@@ -46,7 +46,7 @@ export default function Challenges() {
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
     queryFn: async () => {
-      // ✅ LINHA 40 - Mudar entities.filter() para supabase.from().select()
+      
       const { data, error } = await supabase
         .from('challenges')
         .select('*')
@@ -63,7 +63,7 @@ export default function Challenges() {
     queryKey: ['myParticipations', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return []
-      // ✅ LINHA 54 - Mudar entities.filter() para supabase.from().select()
+      
       const { data, error } = await supabase
         .from('challenge_participants')
         .select('*')
@@ -80,7 +80,7 @@ export default function Challenges() {
     queryKey: ['challengeAchievements', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return []
-      // ✅ LINHA 69 - Mudar entities.filter() para supabase.from().select()
+      
       const { data: allAchievements, error } = await supabase
         .from('achievements')
         .select('*')
@@ -109,7 +109,7 @@ export default function Challenges() {
 
       const challenge = challenges.find(c => c.id === challengeId)
       if (challenge) {
-        // ✅ LINHA 96 - Mudar entities.update() para supabase.from().update()
+        
         const { error: updateError } = await supabase
           .from('challenges')
           .update({
@@ -128,7 +128,6 @@ export default function Challenges() {
 
   const deleteChallengeMutation = useMutation({
     mutationFn: async (challengeId) => {
-      // ✅ LINHA 113-125 - Mudar todas as operações para Supabase
       
       // Delete all participants first
       const { data: participants } = await supabase
