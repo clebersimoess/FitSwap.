@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/supabaseClient"; // ✅ LINHA 2 - Mudar import
+import { supabase } from "@/supabaseClient"; 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -20,7 +20,7 @@ export default function CommunityView() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        // ✅ LINHA 20 - Mudar auth.me() para auth.getUser()
+        
         const { data: { user } } = await supabase.auth.getUser()
         setCurrentUser(user)
       } catch (error) {
@@ -33,7 +33,7 @@ export default function CommunityView() {
   const { data: community, isLoading } = useQuery({
     queryKey: ['community', communityId],
     queryFn: async () => {
-      // ✅ LINHA 32 - Mudar entities.list() para supabase.from().select()
+     
       const { data: communities, error } = await supabase
         .from('communities')
         .select('*')
@@ -48,7 +48,7 @@ export default function CommunityView() {
     queryKey: ['communityMembership', communityId, currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email || !communityId) return null
-      // ✅ LINHA 46 - Mudar entities.filter() para supabase.from().select()
+      
       const { data: memberships, error } = await supabase
         .from('community_members')
         .select('*')
@@ -65,7 +65,7 @@ export default function CommunityView() {
     queryKey: ['communityMembers', communityId],
     queryFn: async () => {
       if (!communityId) return []
-      // ✅ LINHA 61 - Mudar entities.filter() para supabase.from().select()
+      
       const { data, error } = await supabase
         .from('community_members')
         .select('*')
@@ -83,7 +83,7 @@ export default function CommunityView() {
     queryKey: ['communityPosts', communityId],
     queryFn: async () => {
       if (!communityId) return []
-      // ✅ LINHA 77 - Mudar entities.filter() para supabase.from().select()
+      
       const { data, error } = await supabase
         .from('community_posts')
         .select('*')
@@ -101,7 +101,7 @@ export default function CommunityView() {
     mutationFn: async () => {
       if (!membership) return
       
-      // ✅ LINHA 93 - Mudar entities.delete() para supabase.from().delete()
+      
       const { error: deleteError } = await supabase
         .from('community_members')
         .delete()
@@ -110,7 +110,7 @@ export default function CommunityView() {
       if (deleteError) throw deleteError
 
       if (community) {
-        // ✅ LINHA 101 - Mudar entities.update() para supabase.from().update()
+        
         const { error: updateError } = await supabase
           .from('communities')
           .update({
