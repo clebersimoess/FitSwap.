@@ -1,6 +1,6 @@
-
+```javascript
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -25,12 +25,12 @@ export default function PlanDetails() {
   const [currentUser, setCurrentUser] = useState(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("");
-  const [showPixInstructions, setShowPixInstructions] = useState(false); // New state for PIX instructions
+  const [showPixInstructions, setShowPixInstructions] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
       } catch (error) {
         console.log("User not logged in");
@@ -42,38 +42,64 @@ export default function PlanDetails() {
   const { data: plan, isLoading } = useQuery({
     queryKey: ['plan', planId],
     queryFn: async () => {
-      const plans = await base44.entities.WorkoutPlan.list();
-      return plans.find(p => p.id === planId);
+      const { data, error } = await supabase
+        .from('workout_plans')
+        .select('*')
+        .eq('id', planId)
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
     enabled: !!planId
   });
 
   const { data: instructor } = useQuery({
-    queryKey: ['instructor', plan?.instructor_email],
+    queryKey: ['instructor', plan?.instructor_id],
     queryFn: async () => {
-      const users = await base44.entities.User.list();
-      return users.find(u => u.email === plan.instructor_email);
+      if (!plan?.instructor_id) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', plan.instructor_id)
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
-    enabled: !!plan?.instructor_email
+    enabled: !!plan?.instructor_id
   });
 
   const subscribeMutation = useMutation({
     mutationFn: async (data) => {
-      const subscription = await base44.entities.Subscription.create({
-        user_email: currentUser.email,
+      const subscriptionData = {
+        user_id: currentUser.id,
         plan_id: planId,
-        instructor_email: plan.instructor_email,
-        status: data.paymentMethod === 'pix' ? 'pending' : 'active', // Set status to 'pending' for PIX
+        instructor_id: plan.instructor_id,
+        status: data.paymentMethod === 'pix' ? 'pending' : 'active',
         payment_method: data.paymentMethod,
         amount_paid: plan.price_monthly,
-        started_at: new Date().toISOString()
-      });
+        started_at: new Date().toISOString(),
+        next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      };
 
-      // Only update subscribers count if not PIX (PIX approval is manual)
+      const { data: subscription, error } = await supabase
+        .from('subscriptions')
+        .insert(subscriptionData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
       if (data.paymentMethod !== 'pix') {
-        await base44.entities.WorkoutPlan.update(planId, {
-          subscribers_count: (plan.subscribers_count || 0) + 1
-        });
+        const { error: updateError } = await supabase
+          .from('workout_plans')
+          .update({
+            subscribers_count: (plan.subscribers_count || 0) + 1
+          })
+          .eq('id', planId);
+
+        if (updateError) throw updateError;
       }
 
       return subscription;
@@ -83,10 +109,10 @@ export default function PlanDetails() {
       setShowCheckout(false);
       
       if (subscription.status === 'pending') {
-        setShowPixInstructions(true); // Show PIX instructions if pending
+        setShowPixInstructions(true);
       } else {
         alert("Assinatura realizada com sucesso! Bem-vindo ao plano!");
-        navigate(createPageUrl("MySubscriptions")); // Navigate to MySubscriptions
+        navigate(createPageUrl("MySubscriptions"));
       }
     }
   });
@@ -129,24 +155,13 @@ export default function PlanDetails() {
     );
   }
 
-  const formatPriceForPix = (price) => {
-    if (typeof price === 'number') {
-      return price.toFixed(2).replace('.', ''); // Example: 120.00 -> 12000
-    }
-    return '';
-  };
-
   const generatePixCode = () => {
     if (!currentUser || !plan) return 'N/A';
     
-    const amount = plan.price_monthly ? plan.price_monthly.toFixed(2).replace('.', '') : '000'; // Ensure two decimal places, no decimal point
-    const userIdentifier = currentUser.id || '00000000-0000-0000-0000-000000000000'; // Default UUID if not available
+    const amount = plan.price_monthly ? plan.price_monthly.toFixed(2).replace('.', '') : '000';
+    const userIdentifier = currentUser.id || '00000000-0000-0000-0000-000000000000';
     const userIdentifierLength = userIdentifier.length.toString().padStart(2, '0');
 
-    // This is a placeholder PIX code structure. A real implementation would involve a backend service
-    // to generate a secure and valid PIX QR code/Copia e Cola string.
-    // The fixed values (e.g., merchant name, city) would typically come from configuration.
-    // The amount and user ID are inserted for demonstration.
     return `00020126${userIdentifierLength}0014BR.GOV.BCB.PIX01${userIdentifierLength}${userIdentifier}520400005303986540${amount}5802BR6009SAO PAULO62070503***6304ABCD`;
   };
 
@@ -207,11 +222,11 @@ export default function PlanDetails() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF006E] flex items-center justify-center text-white font-bold">
-                    {instructor.full_name?.[0]?.toUpperCase() || 'I'}
+                    {instructor.username?.[0]?.toUpperCase() || 'I'}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-gray-900">{instructor.full_name}</p>
+                      <p className="font-semibold text-gray-900">{instructor.username}</p>
                       {instructor.is_verified && (
                         <Star className="w-4 h-4 text-blue-500 fill-blue-500" />
                       )}
@@ -465,3 +480,4 @@ export default function PlanDetails() {
     </div>
   );
 }
+```
