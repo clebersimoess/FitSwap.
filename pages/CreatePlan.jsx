@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { supabase } from "@/supabaseClient"; // ✅ LINHA 2 - Mudar import
+import { supabase } from "@/supabaseClient"; 
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { ArrowLeft, Upload } from "lucide-react";
@@ -32,7 +32,7 @@ export default function CreatePlan() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        // ✅ LINHA 29 - Mudar auth.me() para auth.getUser()
+        
         const { data: { user } } = await supabase.auth.getUser()
         setCurrentUser(user)
         
@@ -49,7 +49,7 @@ export default function CreatePlan() {
   const handleCoverUpload = async (file) => {
     setIsUploading(true)
     try {
-      // ✅ LINHA 44 - Upload no Supabase Storage
+      
       const fileExt = file.name.split('.').pop()
       const fileName = `${Math.random()}.${fileExt}`
       
@@ -59,7 +59,7 @@ export default function CreatePlan() {
 
       if (error) throw error
 
-      // ✅ Obter URL pública
+   
       const { data: { publicUrl } } = supabase.storage
         .from('plan-covers')
         .getPublicUrl(fileName)
@@ -74,7 +74,7 @@ export default function CreatePlan() {
 
   const createPlanMutation = useMutation({
     mutationFn: async (planData) => {
-      // ✅ LINHA 69 - Mudar entities.create() para supabase.from().insert()
+      
       const { data, error } = await supabase
         .from('workout_plans')
         .insert(planData)
