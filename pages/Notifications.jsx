@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Heart, MessageCircle, UserPlus, Bell, Check, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -15,7 +15,7 @@ export default function Notifications() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
       } catch (error) {
         console.log("User not logged in");
@@ -25,38 +25,60 @@ export default function Notifications() {
   }, []);
 
   const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ['notifications', currentUser?.email],
+    queryKey: ['notifications', currentUser?.id],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Notification.filter(
-        { user_email: currentUser.email }, 
-        '-created_date'
-      );
+      if (!currentUser?.id) return [];
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!currentUser?.email,
+    enabled: !!currentUser?.id,
     initialData: [],
     staleTime: 30 * 1000
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['allUsers'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
+    },
     staleTime: 5 * 60 * 1000
   });
 
   const { data: follows = [] } = useQuery({
-    queryKey: ['myFollows', currentUser?.email],
+    queryKey: ['myFollows', currentUser?.id],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Follow.filter({ follower_email: currentUser.email });
+      if (!currentUser?.id) return [];
+      const { data, error } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('follower_id', currentUser.id);
+      
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!currentUser?.email,
+    enabled: !!currentUser?.id,
     initialData: []
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId) => {
-      await base44.entities.Notification.update(notificationId, { read: true });
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['notifications']);
@@ -66,9 +88,12 @@ export default function Notifications() {
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
       const unreadNotifs = notifications.filter(n => !n.read);
-      await Promise.all(unreadNotifs.map(n => 
-        base44.entities.Notification.update(n.id, { read: true })
-      ));
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .in('id', unreadNotifs.map(n => n.id));
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['notifications']);
@@ -77,7 +102,12 @@ export default function Notifications() {
 
   const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId) => {
-      await base44.entities.Notification.delete(notificationId);
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['notifications']);
@@ -86,21 +116,36 @@ export default function Notifications() {
 
   const followBackMutation = useMutation({
     mutationFn: async (notification) => {
-      await base44.entities.Follow.create({
-        follower_email: currentUser.email,
-        following_email: notification.from_user_email
-      });
+      // Create follow relationship
+      const { error: followError } = await supabase
+        .from('follows')
+        .insert({
+          follower_id: currentUser.id,
+          following_id: notification.from_user_id
+        });
 
-      await base44.entities.Notification.create({
-        user_email: notification.from_user_email,
-        type: "follow",
-        from_user_name: currentUser.full_name,
-        from_user_email: currentUser.email,
-        text: "começou a te seguir"
-      });
+      if (followError) throw followError;
+
+      // Create notification for the other user
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: notification.from_user_id,
+          type: "follow",
+          from_user_id: currentUser.id,
+          from_user_name: currentUser.user_metadata?.full_name || currentUser.email,
+          text: "começou a te seguir"
+        });
+
+      if (notifError) throw notifError;
 
       // Mark notification as read
-      await base44.entities.Notification.update(notification.id, { read: true });
+      const { error: updateError } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notification.id);
+      
+      if (updateError) throw updateError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['myFollows']);
@@ -127,12 +172,12 @@ export default function Notifications() {
     }
   };
 
-  const isFollowing = (email) => {
-    return follows.some(f => f.following_email === email);
+  const isFollowing = (userId) => {
+    return follows.some(f => f.following_id === userId);
   };
 
   const getUserFromNotification = (notification) => {
-    return users.find(u => u.email === notification.from_user_email);
+    return users.find(u => u.id === notification.from_user_id);
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -194,7 +239,7 @@ export default function Notifications() {
             {notifications.map((notification) => {
               const notifUser = getUserFromNotification(notification);
               const isFollowNotif = notification.type === 'follow';
-              const alreadyFollowing = isFollowing(notification.from_user_email);
+              const alreadyFollowing = isFollowing(notification.from_user_id);
 
               return (
                 <div
@@ -217,10 +262,10 @@ export default function Notifications() {
                     className="flex-shrink-0"
                   >
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF006E] flex items-center justify-center text-white font-bold relative">
-                      {notifUser?.profile_photo ? (
+                      {notifUser?.avatar_url ? (
                         <img 
-                          src={notifUser.profile_photo} 
-                          alt={notifUser.full_name}
+                          src={notifUser.avatar_url} 
+                          alt={notifUser.username}
                           className="w-full h-full rounded-full object-cover"
                         />
                       ) : (
@@ -245,7 +290,7 @@ export default function Notifications() {
                       <span className="text-gray-600">{notification.text}</span>
                     </p>
                     <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                      {notification.created_date && formatDistanceToNow(new Date(notification.created_date), {
+                      {notification.created_at && formatDistanceToNow(new Date(notification.created_at), {
                         addSuffix: true,
                         locale: ptBR
                       })}
