@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/supabaseClient"; // ✅ LINHA 2 - Mudar import
+import { supabase } from "@/supabaseClient"; 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users, Plus, Search, TrendingUp, Lock, Unlock, X, Camera, MoreVertical, Settings, Trash2, UserX } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,7 +59,7 @@ export default function Communities() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        // ✅ LINHA 45 - Mudar auth.me() para auth.getUser()
+        
         const { data: { user } } = await supabase.auth.getUser()
         setCurrentUser(user)
       } catch (error) {
@@ -72,7 +72,7 @@ export default function Communities() {
   const { data: communities = [] } = useQuery({
     queryKey: ['communities'],
     queryFn: async () => {
-      // ✅ LINHA 57 - Mudar entities.list() para supabase.from().select()
+      
       const { data, error } = await supabase
         .from('communities')
         .select('*')
@@ -89,7 +89,7 @@ export default function Communities() {
     queryKey: ['myMemberships', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return []
-      // ✅ LINHA 72 - Mudar entities.filter() para supabase.from().select()
+    
       const { data, error } = await supabase
         .from('community_members')
         .select('*')
@@ -105,7 +105,7 @@ export default function Communities() {
 
   const createCommunityMutation = useMutation({
     mutationFn: async (communityData) => {
-      // ✅ LINHA 87 - Mudar entities.create() para supabase.from().insert()
+      
       const { data, error } = await supabase
         .from('communities')
         .insert(communityData)
@@ -115,7 +115,7 @@ export default function Communities() {
       return data[0]
     },
     onSuccess: async (newCommunity) => {
-      // ✅ LINHA 96 - Mudar entities.create() para supabase.from().insert()
+     
       const { error } = await supabase
         .from('community_members')
         .insert({
@@ -136,7 +136,7 @@ export default function Communities() {
 
   const deleteCommunityMutation = useMutation({
     mutationFn: async (communityId) => {
-      // ✅ LINHA 115-135 - Mudar todas as operações para Supabase
+      
       
       // Delete all members first
       const { data: members } = await supabase
@@ -196,7 +196,7 @@ export default function Communities() {
       if (memberError) throw memberError
 
       if (community.is_public) {
-        // ✅ LINHA 166 - Mudar entities.update() para supabase.from().update()
+       
         const { error: updateError } = await supabase
           .from('communities')
           .update({
@@ -216,7 +216,7 @@ export default function Communities() {
   const handleImageUpload = async (file) => {
     setIsUploading(true)
     try {
-      // ✅ LINHA 183 - Upload no Supabase Storage
+    
       const fileExt = file.name.split('.').pop()
       const fileName = `${Math.random()}.${fileExt}`
       
@@ -226,7 +226,7 @@ export default function Communities() {
 
       if (error) throw error
 
-      // ✅ Obter URL pública
+     
       const { data: { publicUrl } } = supabase.storage
         .from('community-covers')
         .getPublicUrl(fileName)
