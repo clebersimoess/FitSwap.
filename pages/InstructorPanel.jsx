@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Users, 
@@ -33,10 +33,10 @@ export default function InstructorPanel() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
         
-        if (user.account_type !== 'instructor') {
+        if (user?.user_metadata?.account_type !== 'instructor') {
           navigate(createPageUrl("Home"));
         }
       } catch (error) {
@@ -51,9 +51,13 @@ export default function InstructorPanel() {
     queryKey: ['instructorFollowers', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      return await base44.entities.Follow.filter({ 
-        following_email: currentUser.email 
-      });
+      const { data, error } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('following_email', currentUser.email);
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!currentUser?.email,
     initialData: []
@@ -62,7 +66,14 @@ export default function InstructorPanel() {
   // Fetch all users to get student info
   const { data: allUsers = [] } = useQuery({
     queryKey: ['allUsers'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 
@@ -71,9 +82,13 @@ export default function InstructorPanel() {
     queryKey: ['instructorStudents', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      return await base44.entities.InstructorStudent.filter({ 
-        instructor_email: currentUser.email 
-      });
+      const { data, error } = await supabase
+        .from('instructor_students')
+        .select('*')
+        .eq('instructor_email', currentUser.email);
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!currentUser?.email,
     initialData: []
@@ -84,9 +99,14 @@ export default function InstructorPanel() {
     queryKey: ['privateChallenges', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      return await base44.entities.PrivateChallenge.filter({ 
-        instructor_email: currentUser.email 
-      }, '-created_date');
+      const { data, error } = await supabase
+        .from('private_challenges')
+        .select('*')
+        .eq('instructor_email', currentUser.email)
+        .order('created_date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!currentUser?.email,
     initialData: []
@@ -97,9 +117,14 @@ export default function InstructorPanel() {
     queryKey: ['instructorPlans', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      return await base44.entities.WorkoutPlan.filter({ 
-        instructor_email: currentUser.email 
-      }, '-created_date');
+      const { data, error } = await supabase
+        .from('workout_plans')
+        .select('*')
+        .eq('instructor_email', currentUser.email)
+        .order('created_date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!currentUser?.email,
     initialData: []
@@ -110,9 +135,14 @@ export default function InstructorPanel() {
     queryKey: ['instructorPosts', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      return await base44.entities.Post.filter({ 
-        created_by: currentUser.email 
-      }, '-created_date');
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('created_by', currentUser.email)
+        .order('created_date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!currentUser?.email,
     initialData: []
@@ -121,10 +151,15 @@ export default function InstructorPanel() {
   // Accept student mutation
   const acceptStudentMutation = useMutation({
     mutationFn: async (relationshipId) => {
-      await base44.entities.InstructorStudent.update(relationshipId, {
-        status: 'active',
-        started_at: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('instructor_students')
+        .update({
+          status: 'active',
+          started_at: new Date().toISOString()
+        })
+        .eq('id', relationshipId);
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['instructorStudents']);
@@ -134,7 +169,12 @@ export default function InstructorPanel() {
   // Reject student mutation
   const rejectStudentMutation = useMutation({
     mutationFn: async (relationshipId) => {
-      await base44.entities.InstructorStudent.delete(relationshipId);
+      const { error } = await supabase
+        .from('instructor_students')
+        .delete()
+        .eq('id', relationshipId);
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['instructorStudents']);
@@ -144,21 +184,29 @@ export default function InstructorPanel() {
   // Invite student mutation
   const inviteStudentMutation = useMutation({
     mutationFn: async (studentEmail) => {
-      await base44.entities.InstructorStudent.create({
-        instructor_email: currentUser.email,
-        student_email: studentEmail,
-        status: 'pending',
-        plan_type: 'free_trial'
-      });
+      const { error: relationError } = await supabase
+        .from('instructor_students')
+        .insert({
+          instructor_email: currentUser.email,
+          student_email: studentEmail,
+          status: 'pending',
+          plan_type: 'free_trial'
+        });
+      
+      if (relationError) throw relationError;
 
       // Create notification
-      await base44.entities.Notification.create({
-        user_email: studentEmail,
-        type: 'follow',
-        from_user_name: currentUser.full_name,
-        from_user_email: currentUser.email,
-        text: `${currentUser.full_name} convidou você para ser seu aluno!`
-      });
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_email: studentEmail,
+          type: 'follow',
+          from_user_name: currentUser.user_metadata?.full_name,
+          from_user_email: currentUser.email,
+          text: `${currentUser.user_metadata?.full_name} convidou você para ser seu aluno!`
+        });
+      
+      if (notificationError) throw notificationError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['instructorStudents']);
