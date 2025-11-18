@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Search, MessageCircle, Send } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -16,72 +16,91 @@ export default function DirectMessages() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUser(user)
       } catch (error) {
-        console.log("User not logged in");
+        console.log("User not logged in")
       }
-    };
-    getUser();
-  }, []);
+    }
+    getUser()
+  }, [])
 
   // Get chat partner from URL if exists
   useEffect(() => {
-    const userEmail = searchParams.get('user');
+    const userEmail = searchParams.get('user')
     if (userEmail) {
-      setSelectedChat(userEmail);
+      setSelectedChat(userEmail)
     }
-  }, [searchParams]);
+  }, [searchParams])
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['allUsers'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+      
+      if (error) throw error
+      return data || []
+    },
     staleTime: 5 * 60 * 1000,
     initialData: []
-  });
+  })
 
   const { data: following = [] } = useQuery({
     queryKey: ['myFollowing', currentUser?.email],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Follow.filter({ follower_email: currentUser.email });
+      if (!currentUser?.email) return []
+      const { data, error } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('follower_email', currentUser.email)
+      
+      if (error) throw error
+      return data || []
     },
     enabled: !!currentUser?.email,
     initialData: []
-  });
+  })
 
   const { data: followers = [] } = useQuery({
     queryKey: ['myFollowers', currentUser?.email],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Follow.filter({ following_email: currentUser.email });
+      if (!currentUser?.email) return []
+      const { data, error } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('following_email', currentUser.email)
+      
+      if (error) throw error
+      return data || []
     },
     enabled: !!currentUser?.email,
     initialData: []
-  });
+  })
 
   // Get users I can message (following + followers)
   const connectionsEmails = [
     ...following.map(f => f.following_email),
     ...followers.map(f => f.follower_email)
-  ];
+  ]
   
-  const uniqueConnections = [...new Set(connectionsEmails)].filter(email => email !== currentUser?.email);
+  const uniqueConnections = [...new Set(connectionsEmails)].filter(email => email !== currentUser?.email)
 
   const connections = uniqueConnections
     .map(email => allUsers.find(u => u.email === email))
-    .filter(u => u && u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()));
+    .filter(u => u && u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()))
 
   if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF6B35] border-t-transparent"></div>
       </div>
-    );
+    )
   }
 
   if (selectedChat) {
-    const chatUser = allUsers.find(u => u.email === selectedChat);
+    const chatUser = allUsers.find(u => u.email === selectedChat)
     
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -143,7 +162,7 @@ export default function DirectMessages() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -223,5 +242,5 @@ export default function DirectMessages() {
         )}
       </div>
     </div>
-  );
+  )
 }
