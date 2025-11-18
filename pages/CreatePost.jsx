@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { X, Plus, Trash2, Image as ImageIcon, Camera, Video, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { supabase } from "@/supabaseClient"; // ✅ LINHA 7 - Mudar import
+import { supabase } from "@/supabaseClient"; 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,7 +28,7 @@ export default function CreatePost() {
 
   const createPostMutation = useMutation({
     mutationFn: async (postData) => {
-      // ✅ LINHA 32 - Mudar entities.create() para supabase.from().insert()
+      
       const { data, error } = await supabase
         .from('posts')
         .insert(postData)
@@ -68,7 +68,7 @@ export default function CreatePost() {
     
     try {
       const uploadPromises = Array.from(files).map(async (file, index) => {
-        // ✅ LINHA 65 - Upload no Supabase Storage
+        
         const fileExt = file.name.split('.').pop()
         const fileName = `${Math.random()}.${fileExt}`
         const bucket = type === 'video' ? 'post-videos' : 'post-photos'
@@ -79,7 +79,7 @@ export default function CreatePost() {
 
         if (error) throw error
 
-        // ✅ Obter URL pública
+        
         const { data: { publicUrl } } = supabase.storage
           .from(bucket)
           .getPublicUrl(fileName)
