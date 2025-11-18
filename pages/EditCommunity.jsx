@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Camera, X, Lock, Unlock } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -38,63 +38,86 @@ export default function EditCommunity() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUser(user)
       } catch (error) {
-        navigate(createPageUrl("Communities"));
+        navigate(createPageUrl("Communities"))
       }
-    };
-    getUser();
-  }, [navigate]);
+    }
+    getUser()
+  }, [navigate])
 
   const { data: community } = useQuery({
     queryKey: ['community', communityId],
     queryFn: async () => {
-      const result = await base44.entities.Community.filter({ id: communityId });
-      return result[0];
+      const { data, error } = await supabase
+        .from('communities')
+        .select('*')
+        .eq('id', communityId)
+        .single()
+      
+      if (error) throw error
+      return data
     },
     enabled: !!communityId
-  });
+  })
 
   // Populate form when community loads
   useEffect(() => {
     if (community) {
-      setName(community.name || "");
-      setDescription(community.description || "");
-      setCategory(community.category || "Fitness Geral");
-      setIsPublic(community.is_public ?? true);
-      setRules(community.rules || "");
-      setCoverPhoto(community.cover_photo || "");
+      setName(community.name || "")
+      setDescription(community.description || "")
+      setCategory(community.category || "Fitness Geral")
+      setIsPublic(community.is_public ?? true)
+      setRules(community.rules || "")
+      setCoverPhoto(community.cover_photo || "")
     }
-  }, [community]);
+  }, [community])
 
   const updateCommunityMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.Community.update(communityId, data);
+      const { data: result, error } = await supabase
+        .from('communities')
+        .update(data)
+        .eq('id', communityId)
+        .select()
+      
+      if (error) throw error
+      return result
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['communities']);
-      queryClient.invalidateQueries(['community']);
-      navigate(createPageUrl("Communities"));
+      queryClient.invalidateQueries(['communities'])
+      queryClient.invalidateQueries(['community'])
+      navigate(createPageUrl("Communities"))
     }
-  });
+  })
 
   const handleImageUpload = async (file) => {
-    setIsUploading(true);
+    setIsUploading(true)
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setCoverPhoto(file_url);
+      const fileName = `${Date.now()}-${file.name}`
+      const { data, error } = await supabase.storage
+        .from('community-covers')
+        .upload(fileName, file)
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('community-covers')
+        .getPublicUrl(fileName)
+
+      setCoverPhoto(publicUrl)
     } catch (error) {
-      console.error("Error uploading image:", error);
-      alert("Erro ao fazer upload da imagem");
+      console.error("Error uploading image:", error)
+      alert("Erro ao fazer upload da imagem")
     }
-    setIsUploading(false);
-  };
+    setIsUploading(false)
+  }
 
   const handleSave = () => {
     if (!name.trim() || !description.trim()) {
-      alert("Preencha nome e descrição!");
-      return;
+      alert("Preencha nome e descrição!")
+      return
     }
 
     updateCommunityMutation.mutate({
@@ -104,23 +127,23 @@ export default function EditCommunity() {
       is_public: isPublic,
       rules,
       cover_photo: coverPhoto
-    });
-  };
+    })
+  }
 
   if (!community) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF6B35] border-t-transparent"></div>
       </div>
-    );
+    )
   }
 
   // Check if current user is owner
-  const isOwner = community.owner_email === currentUser?.email;
+  const isOwner = community.owner_email === currentUser?.email
 
   if (!isOwner) {
-    navigate(createPageUrl("Communities"));
-    return null;
+    navigate(createPageUrl("Communities"))
+    return null
   }
 
   return (
@@ -251,5 +274,5 @@ export default function EditCommunity() {
         </div>
       </div>
     </div>
-  );
+  )
 }
