@@ -1,5 +1,6 @@
+```javascript
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { MessageCircle, Calendar, DollarSign } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +17,7 @@ export default function MySubscriptions() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
       } catch (error) {
         console.log("User not logged in");
@@ -26,19 +27,30 @@ export default function MySubscriptions() {
   }, []);
 
   const { data: subscriptions = [] } = useQuery({
-    queryKey: ['mySubscriptions', currentUser?.email],
+    queryKey: ['mySubscriptions', currentUser?.id],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Subscription.filter({ user_email: currentUser.email });
+      if (!currentUser?.id) return [];
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', currentUser.id);
+      
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!currentUser?.email,
+    enabled: !!currentUser?.id,
     initialData: []
   });
 
   const { data: plans = [] } = useQuery({
     queryKey: ['subscriptionPlans'],
     queryFn: async () => {
-      return await base44.entities.WorkoutPlan.list();
+      const { data, error } = await supabase
+        .from('workout_plans')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
     },
     initialData: []
   });
@@ -135,3 +147,4 @@ export default function MySubscriptions() {
     </div>
   );
 }
+```
