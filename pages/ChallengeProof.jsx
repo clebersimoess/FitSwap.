@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { supabase } from "@/supabaseClient"; // ✅ LINHA 2 - Mudar import
+import { supabase } from "@/supabaseClient"; 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Camera, Image as ImageIcon, Video, Check } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -30,7 +30,7 @@ export default function ChallengeProof() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        // ✅ LINHA 32 - Mudar auth.me() para auth.getUser()
+      
         const { data: { user } } = await supabase.auth.getUser()
         setCurrentUser(user)
       } catch (error) {
@@ -43,7 +43,7 @@ export default function ChallengeProof() {
   const { data: challenge } = useQuery({
     queryKey: ['challenge', challengeId],
     queryFn: async () => {
-      // ✅ LINHA 43 - Mudar entities.list() para supabase.from().select()
+      
       const { data: challenges } = await supabase
         .from('challenges')
         .select('*')
@@ -55,7 +55,7 @@ export default function ChallengeProof() {
 
   const submitProofMutation = useMutation({
     mutationFn: async (proofData) => {
-      // ✅ LINHA 53 - Mudar entities.create() para supabase.from().insert()
+      
       const { data, error } = await supabase
         .from('challenge_proof_submissions')
         .insert(proofData)
@@ -65,7 +65,7 @@ export default function ChallengeProof() {
       return data[0]
     },
     onSuccess: async () => {
-      // ✅ LINHA 62-69 - Mudar entities.list() e update() para Supabase
+    
       const { data: participants } = await supabase
         .from('challenge_participants')
         .select('*')
@@ -95,7 +95,7 @@ export default function ChallengeProof() {
 
     setIsUploading(true)
     try {
-      // ✅ LINHA 95 - Upload no Supabase Storage
+      
       const file = files[0]
       const fileExt = file.name.split('.').pop()
       const fileName = `${Math.random()}.${fileExt}`
@@ -106,7 +106,6 @@ export default function ChallengeProof() {
 
       if (error) throw error
 
-      // ✅ Obter URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('challenge-proofs')
         .getPublicUrl(fileName)
