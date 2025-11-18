@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { supabase } from "@/supabaseClient"; // ✅ LINHA 2 - Mudar import
+import { supabase } from "@/supabaseClient"; 
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { ArrowLeft, Upload, Lock, Unlock } from "lucide-react";
@@ -30,7 +30,7 @@ export default function CreateChallenge() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        // ✅ LINHA 29 - Mudar auth.me() para auth.getUser()
+        
         const { data: { user } } = await supabase.auth.getUser()
         setCurrentUser(user)
       } catch (error) {
@@ -43,7 +43,7 @@ export default function CreateChallenge() {
   const handleImageUpload = async (file) => {
     setIsUploading(true)
     try {
-      // ✅ LINHA 41 - Upload no Supabase Storage
+      
       const fileExt = file.name.split('.').pop()
       const fileName = `${Math.random()}.${fileExt}`
       
@@ -53,7 +53,7 @@ export default function CreateChallenge() {
 
       if (error) throw error
 
-      // ✅ Obter URL pública
+      
       const { data: { publicUrl } } = supabase.storage
         .from('challenge-images')
         .getPublicUrl(fileName)
@@ -72,7 +72,7 @@ export default function CreateChallenge() {
       const endDate = new Date()
       endDate.setDate(endDate.getDate() + parseInt(durationDays))
 
-      // ✅ LINHA 67 - Mudar entities.create() para supabase.from().insert()
+      
       const { data, error } = await supabase
         .from('challenges')
         .insert({
