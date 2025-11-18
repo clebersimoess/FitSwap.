@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Grid, Users as UsersIcon, Trophy, X, Clock, Image as ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -68,33 +68,63 @@ export default function Explore() {
 
   const { data: posts = [], isLoading: postsLoading } = useQuery({
     queryKey: ['posts'],
-    queryFn: () => base44.entities.Post.list('-created_date'),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_date', { ascending: false })
+      
+      if (error) throw error
+      return data || []
+    },
     initialData: [],
     staleTime: 2 * 60 * 1000
-  });
+  })
 
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+      
+      if (error) throw error
+      return data || []
+    },
     initialData: [],
     staleTime: 5 * 60 * 1000
-  });
+  })
 
   const { data: communities = [], isLoading: communitiesLoading } = useQuery({
     queryKey: ['communities'],
-    queryFn: () => base44.entities.Community.list('-created_date'),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('communities')
+        .select('*')
+        .order('created_date', { ascending: false })
+      
+      if (error) throw error
+      return data || []
+    },
     initialData: [],
     staleTime: 5 * 60 * 1000
-  });
+  })
 
   const { data: challenges = [], isLoading: challengesLoading } = useQuery({
     queryKey: ['challenges'],
     queryFn: async () => {
-      return await base44.entities.Challenge.filter({ is_public: true }, '-created_date');
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('is_public', true)
+        .order('created_date', { ascending: false })
+      
+      if (error) throw error
+      return data || []
     },
     initialData: [],
     staleTime: 5 * 60 * 1000
-  });
+  })
 
   // Filter results based on search
   const filteredPosts = posts.filter(post => 
@@ -102,7 +132,7 @@ export default function Explore() {
     post.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     post.created_by?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     post.category?.toLowerCase().includes(debouncedSearch.toLowerCase())
-  );
+  )
 
   const filteredUsers = users.filter(user =>
     !debouncedSearch ||
@@ -110,25 +140,25 @@ export default function Explore() {
     user.email?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     user.bio?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     user.specialties?.some(s => s.toLowerCase().includes(debouncedSearch.toLowerCase()))
-  );
+  )
 
   const filteredCommunities = communities.filter(community =>
     !debouncedSearch ||
     community.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     community.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     community.category?.toLowerCase().includes(debouncedSearch.toLowerCase())
-  );
+  )
 
   const filteredChallenges = challenges.filter(challenge =>
     !debouncedSearch ||
     challenge.title?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     challenge.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     challenge.type?.toLowerCase().includes(debouncedSearch.toLowerCase())
-  );
+  )
 
-  const isLoading = postsLoading || usersLoading || communitiesLoading || challengesLoading;
+  const isLoading = postsLoading || usersLoading || communitiesLoading || challengesLoading
 
-  const totalResults = filteredPosts.length + filteredUsers.length + filteredCommunities.length + filteredChallenges.length;
+  const totalResults = filteredPosts.length + filteredUsers.length + filteredCommunities.length + filteredChallenges.length
 
   // Get counts per category for tab badges
   const categoryCounts = {
@@ -136,7 +166,7 @@ export default function Explore() {
     posts: filteredPosts.length,
     communities: filteredCommunities.length,
     challenges: filteredChallenges.length
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -679,5 +709,5 @@ export default function Explore() {
         </Tabs>
       </div>
     </div>
-  );
+  )
 }
