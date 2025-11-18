@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -16,10 +15,10 @@ export default function InstructorDashboard() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
         
-        if (user.account_type !== 'instructor') { // Corrected typo: 'instrutor' -> 'instructor'
+        if (user?.user_metadata?.account_type !== 'instructor') {
           navigate(createPageUrl("BecomeInstructor"));
         }
       } catch (error) {
@@ -33,7 +32,13 @@ export default function InstructorDashboard() {
     queryKey: ['instructorPlans', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      return await base44.entities.WorkoutPlan.filter({ instructor_email: currentUser.email });
+      const { data, error } = await supabase
+        .from('workout_plans')
+        .select('*')
+        .eq('instructor_email', currentUser.email);
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!currentUser?.email,
     initialData: []
@@ -43,10 +48,14 @@ export default function InstructorDashboard() {
     queryKey: ['instructorSubscriptions', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      return await base44.entities.Subscription.filter({ 
-        instructor_email: currentUser.email,
-        status: 'active'
-      });
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('instructor_email', currentUser.email)
+        .eq('status', 'active');
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!currentUser?.email,
     initialData: []
@@ -163,7 +172,7 @@ export default function InstructorDashboard() {
                       <div className="flex items-center gap-4 text-sm text-gray-600">
                         <span>R$ {plan.price_monthly}/mês</span>
                         <span>•</span>
-                        <span>{plan.subscribers_count} alunos</span>
+                        <span>{plan.subscribers_count || 0} alunos</span>
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline">
@@ -203,10 +212,12 @@ export default function InstructorDashboard() {
                           </p>
                         </div>
                       </div>
-                      <Button size="sm" variant="outline">
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Chat
-                      </Button>
+                      <Link to={`${createPageUrl("InstructorChat")}?studentEmail=${sub.user_email}`}>
+                        <Button size="sm" variant="outline">
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Chat
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>
