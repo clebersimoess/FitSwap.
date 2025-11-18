@@ -1,5 +1,6 @@
+```javascript
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -22,7 +23,7 @@ export default function StudentChat() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
       } catch (error) {
         console.log("User not logged in");
@@ -34,8 +35,14 @@ export default function StudentChat() {
   const { data: subscription } = useQuery({
     queryKey: ['subscription', subscriptionId],
     queryFn: async () => {
-      const subs = await base44.entities.Subscription.list();
-      return subs.find(s => s.id === subscriptionId);
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('id', subscriptionId)
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
     enabled: !!subscriptionId
   });
@@ -44,27 +51,42 @@ export default function StudentChat() {
     queryKey: ['chatMessages', subscriptionId],
     queryFn: async () => {
       if (!subscriptionId) return [];
-      return await base44.entities.ChatMessage.filter(
-        { subscription_id: subscriptionId },
-        'created_date'
-      );
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('subscription_id', subscriptionId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!subscriptionId,
     initialData: []
   });
 
   const { data: instructor } = useQuery({
-    queryKey: ['instructor', subscription?.instructor_email],
+    queryKey: ['instructor', subscription?.instructor_id],
     queryFn: async () => {
-      const users = await base44.entities.User.list();
-      return users.find(u => u.email === subscription.instructor_email);
+      if (!subscription?.instructor_id) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', subscription.instructor_id)
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
-    enabled: !!subscription?.instructor_email
+    enabled: !!subscription?.instructor_id
   });
 
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData) => {
-      await base44.entities.ChatMessage.create(messageData);
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert(messageData);
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['chatMessages', subscriptionId]);
@@ -79,9 +101,10 @@ export default function StudentChat() {
 
     sendMessageMutation.mutate({
       subscription_id: subscriptionId,
-      sender_email: currentUser.email,
+      sender_id: currentUser.id,
       message: message.trim(),
-      type: 'text'
+      type: 'text',
+      created_at: new Date().toISOString()
     });
   };
 
@@ -112,10 +135,10 @@ export default function StudentChat() {
           </button>
           <div className="flex items-center gap-3 flex-1">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF006E] flex items-center justify-center text-white font-bold">
-              {instructor?.full_name?.[0]?.toUpperCase() || 'I'}
+              {instructor?.username?.[0]?.toUpperCase() || 'I'}
             </div>
             <div>
-              <p className="font-semibold text-gray-900">{instructor?.full_name || 'Instrutor'}</p>
+              <p className="font-semibold text-gray-900">{instructor?.username || 'Instrutor'}</p>
               <p className="text-xs text-gray-500">Online</p>
             </div>
           </div>
@@ -132,14 +155,14 @@ export default function StudentChat() {
         ) : (
           <div className="space-y-4 max-w-2xl mx-auto">
             {messages.map((msg) => {
-              const isFromMe = msg.sender_email === currentUser.email;
+              const isFromMe = msg.sender_id === currentUser.id;
               
               return (
                 <div key={msg.id} className={`flex ${isFromMe ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[75%] ${isFromMe ? 'bg-gradient-to-r from-[#FF6B35] to-[#FF006E] text-white' : 'bg-white border border-gray-200 text-gray-900'} rounded-2xl px-4 py-2`}>
                     <p className="text-sm">{msg.message}</p>
                     <p className={`text-xs mt-1 ${isFromMe ? 'text-white/70' : 'text-gray-500'}`}>
-                      {msg.created_date && formatDistanceToNow(new Date(msg.created_date), {
+                      {msg.created_at && formatDistanceToNow(new Date(msg.created_at), {
                         addSuffix: true,
                         locale: ptBR
                       })}
@@ -180,3 +203,4 @@ export default function StudentChat() {
     </div>
   );
 }
+```
