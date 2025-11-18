@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Send, Paperclip, Image as ImageIcon, Smile } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -20,100 +20,150 @@ export default function InstructorChat() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUser(user)
         
-        if (user.account_type !== 'instructor') {
-          navigate(createPageUrl("InstructorPanel"));
+        if (user?.user_metadata?.account_type !== 'instructor') {
+          navigate(createPageUrl("InstructorPanel"))
         }
       } catch (error) {
-        navigate(createPageUrl("InstructorPanel"));
+        navigate(createPageUrl("InstructorPanel"))
       }
-    };
-    getUser();
-  }, [navigate]);
+    }
+    getUser()
+  }, [navigate])
 
   // Fetch student info
   const { data: student } = useQuery({
     queryKey: ['student', studentEmail],
     queryFn: async () => {
-      const users = await base44.entities.User.list();
-      return users.find(u => u.email === studentEmail);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', studentEmail)
+        .single()
+      
+      if (error) throw error
+      return data
     },
     enabled: !!studentEmail
-  });
+  })
 
   // Find or create subscription/relationship
   const { data: relationship } = useQuery({
     queryKey: ['instructorStudentRelation', currentUser?.email, studentEmail],
     queryFn: async () => {
-      if (!currentUser?.email || !studentEmail) return null;
-      const relations = await base44.entities.InstructorStudent.filter({
-        instructor_email: currentUser.email,
-        student_email: studentEmail
-      });
-      return relations[0];
+      if (!currentUser?.email || !studentEmail) return null
+      const { data, error } = await supabase
+        .from('instructor_students')
+        .select('*')
+        .eq('instructor_email', currentUser.email)
+        .eq('student_email', studentEmail)
+        .single()
+      
+      if (error && error.code !== 'PGRST116') throw error // PGRST116 = no rows returned
+      return data
     },
     enabled: !!currentUser?.email && !!studentEmail
-  });
+  })
 
   // Fetch messages
   const { data: messages = [] } = useQuery({
     queryKey: ['chatMessages', relationship?.id],
     queryFn: async () => {
-      if (!relationship?.id) return [];
-      return await base44.entities.ChatMessage.filter({
-        subscription_id: relationship.id
-      }, 'created_date');
+      if (!relationship?.id) return []
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('subscription_id', relationship.id)
+        .order('created_date', { ascending: true })
+      
+      if (error) throw error
+      return data || []
     },
     enabled: !!relationship?.id,
     initialData: [],
     refetchInterval: 3000 // Poll every 3 seconds for new messages
-  });
+  })
 
   const sendMessageMutation = useMutation({
     mutationFn: async (messageText) => {
-      if (!relationship?.id) throw new Error("No relationship found");
-      
-      await base44.entities.ChatMessage.create({
-        subscription_id: relationship.id,
-        sender_email: currentUser.email,
-        message: messageText,
-        type: 'text'
-      });
+      if (!relationship?.id) {
+        // Create relationship first if it doesn't exist
+        const { data: newRelationship, error: relationError } = await supabase
+          .from('instructor_students')
+          .insert({
+            instructor_email: currentUser.email,
+            student_email: studentEmail
+          })
+          .select()
+          .single()
+        
+        if (relationError) throw relationError
+        
+        // Use the new relationship ID
+        const relationshipId = newRelationship.id
+        
+        const { error: messageError } = await supabase
+          .from('chat_messages')
+          .insert({
+            subscription_id: relationshipId,
+            sender_email: currentUser.email,
+            message: messageText,
+            type: 'text'
+          })
+        
+        if (messageError) throw messageError
+      } else {
+        const { error: messageError } = await supabase
+          .from('chat_messages')
+          .insert({
+            subscription_id: relationship.id,
+            sender_email: currentUser.email,
+            message: messageText,
+            type: 'text'
+          })
+        
+        if (messageError) throw messageError
+      }
 
       // Create notification for student
-      await base44.entities.Notification.create({
-        user_email: studentEmail,
-        type: 'comment',
-        from_user_name: currentUser.full_name,
-        from_user_email: currentUser.email,
-        text: `${currentUser.full_name} enviou uma mensagem`
-      });
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_email: studentEmail,
+          type: 'comment',
+          from_user_name: currentUser.user_metadata?.full_name,
+          from_user_email: currentUser.email,
+          text: `${currentUser.user_metadata?.full_name} enviou uma mensagem`
+        })
+      
+      if (notificationError) throw notificationError
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['chatMessages']);
-      setMessage("");
+      queryClient.invalidateQueries(['chatMessages'])
+      queryClient.invalidateQueries(['instructorStudentRelation'])
+      setMessage("")
     }
-  });
+  })
 
   // Auto scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
   const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-    sendMessageMutation.mutate(message);
-  };
+    e.preventDefault()
+    if (!message.trim()) return
+    sendMessageMutation.mutate(message)
+  }
 
   if (!currentUser || !student) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF6B35] border-t-transparent"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -165,7 +215,7 @@ export default function InstructorChat() {
         )}
 
         {messages.map((msg) => {
-          const isInstructor = msg.sender_email === currentUser.email;
+          const isInstructor = msg.sender_email === currentUser.email
           
           return (
             <div
@@ -188,7 +238,7 @@ export default function InstructorChat() {
                 </p>
               </div>
             </div>
-          );
+          )
         })}
         <div ref={messagesEndRef} />
       </div>
@@ -221,5 +271,5 @@ export default function InstructorChat() {
         </form>
       </div>
     </div>
-  );
+  )
 }
