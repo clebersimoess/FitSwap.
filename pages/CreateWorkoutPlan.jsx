@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Camera, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -35,54 +35,70 @@ export default function CreateWorkoutPlan() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUser(user)
         
-        if (user.account_type !== 'instructor') {
-          navigate(createPageUrl("Home"));
+        if (user?.user_metadata?.account_type !== 'instructor') {
+          navigate(createPageUrl("Home"))
         }
       } catch (error) {
-        navigate(createPageUrl("Home"));
+        navigate(createPageUrl("Home"))
       }
-    };
-    getUser();
-  }, [navigate]);
+    }
+    getUser()
+  }, [navigate])
 
   const createPlanMutation = useMutation({
     mutationFn: async (planData) => {
-      return await base44.entities.WorkoutPlan.create(planData);
+      const { data, error } = await supabase
+        .from('workout_plans')
+        .insert(planData)
+        .select()
+      
+      if (error) throw error
+      return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['instructorPlans']);
-      navigate(createPageUrl("InstructorPanel"));
+      queryClient.invalidateQueries(['instructorPlans'])
+      navigate(createPageUrl("InstructorPanel"))
     }
-  });
+  })
 
   const handleImageUpload = async (file) => {
-    setIsUploading(true);
+    setIsUploading(true)
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setCoverImage(file_url);
+      const fileName = `${Date.now()}-${file.name}`
+      const { data, error } = await supabase.storage
+        .from('workout-plan-covers')
+        .upload(fileName, file)
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('workout-plan-covers')
+        .getPublicUrl(fileName)
+
+      setCoverImage(publicUrl)
     } catch (error) {
-      console.error("Error uploading image:", error);
-      alert("Erro ao fazer upload da imagem");
+      console.error("Error uploading image:", error)
+      alert("Erro ao fazer upload da imagem")
     }
-    setIsUploading(false);
-  };
+    setIsUploading(false)
+  }
 
   const handleCreate = () => {
     if (!title.trim() || !description.trim()) {
-      alert("Preencha título e descrição!");
-      return;
+      alert("Preencha título e descrição!")
+      return
     }
 
     if (priceMonthly < 0) {
-      alert("Preço não pode ser negativo!");
-      return;
+      alert("Preço não pode ser negativo!")
+      return
     }
 
     createPlanMutation.mutate({
-      instructor_email: currentUser.email,
+      instructor_email: currentUser?.email,
       title,
       description,
       cover_image: coverImage,
@@ -95,15 +111,15 @@ export default function CreateWorkoutPlan() {
       includes_chat: includesChat,
       active,
       subscribers_count: 0
-    });
-  };
+    })
+  }
 
   if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF6B35] border-t-transparent"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -302,5 +318,5 @@ export default function CreateWorkoutPlan() {
         </div>
       </div>
     </div>
-  );
+  )
 }
