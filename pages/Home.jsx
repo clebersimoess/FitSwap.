@@ -123,3 +123,136 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Posts Feed */}
+          <div className="lg:col-span-2">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Feed</h2>
+              
+              {posts.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">📝</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Nenhum post ainda
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Seja o primeiro a compartilhar seu progresso!
+                  </p>
+                  {user && (
+                    <Button
+                      onClick={() => navigate(createPageUrl("CreatePost"))}
+                      className="bg-[#FF6B35] hover:bg-[#FF5A25]"
+                    >
+                      Criar Primeiro Post
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {posts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      currentUser={user}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            {user && (
+              <div className="space-y-6">
+                {/* User Stats */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Seu Progresso
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Posts</span>
+                      <span className="font-semibold">
+                        {posts.filter(p => p.user_id === user.id).length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Seguidores</span>
+                      <span className="font-semibold">--</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Seguindo</span>
+                      <span className="font-semibold">--</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Workout History */}
+                <WorkoutHistory userId={user.id} />
+
+                {/* Quick Actions */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Ações Rápidas
+                  </h3>
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => navigate(createPageUrl("Explore"))}
+                      variant="outline"
+                      className="w-full justify-start"
+                    >
+                      🔍 Explorar
+                    </Button>
+                    <Button
+                      onClick={() => navigate(createPageUrl("Challenges"))}
+                      variant="outline"
+                      className="w-full justify-start"
+                    >
+                      🏆 Desafios
+                    </Button>
+                    <Button
+                      onClick={() => navigate(createPageUrl("Communities"))}
+                      variant="outline"
+                      className="w-full justify-start"
+                    >
+                      👥 Comunidades
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!user && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Junte-se à Comunidade
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Conecte-se com outros entusiastas do fitness, compartilhe seu progresso e participe de desafios!
+                </p>
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => navigate(createPageUrl("Register"))}
+                    className="w-full bg-[#FF6B35] hover:bg-[#FF5A25]"
+                  >
+                    Criar Conta
+                  </Button>
+                  <Button
+                    onClick={() => navigate(createPageUrl("Login"))}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Fazer Login
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
