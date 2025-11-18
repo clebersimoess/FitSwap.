@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { ArrowLeft, Building2, Store } from "lucide-react";
@@ -34,50 +33,56 @@ export default function BusinessSetup() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUser(user)
       } catch (error) {
-        console.log("User not logged in");
+        console.log("User not logged in")
       }
-    };
-    getUser();
-  }, []);
+    }
+    getUser()
+  }, [])
 
   const createBusinessMutation = useMutation({
     mutationFn: async (data) => {
-      // Calculate free period end date (3 months from now)
-      const freePeriodEnds = new Date();
-      freePeriodEnds.setMonth(freePeriodEnds.getMonth() + 3);
+      const freePeriodEnds = new Date()
+      freePeriodEnds.setMonth(freePeriodEnds.getMonth() + 3)
 
-      await base44.entities.BusinessProfile.create({
-        ...data,
-        free_period_ends: freePeriodEnds.toISOString().split('T')[0],
-        submitted_at: new Date().toISOString(),
-        verification_status: 'pending',
-        verified: false
-      });
+      const { error: businessError } = await supabase
+        .from('business_profiles')
+        .insert({
+          ...data,
+          free_period_ends: freePeriodEnds.toISOString().split('T')[0],
+          submitted_at: new Date().toISOString(),
+          verification_status: 'pending',
+          verified: false
+        })
 
-      // Update user account type
-      await base44.auth.updateMe({
-        account_type: 'comercial'
-      });
+      if (businessError) throw businessError
+
+      const { error: userError } = await supabase.auth.updateUser({
+        data: {
+          account_type: 'comercial'
+        }
+      })
+
+      if (userError) throw userError
     },
     onSuccess: () => {
-      alert("Cadastro enviado! Nossa equipe irá verificar suas informações em até 48 horas. Você receberá um email com o resultado.");
-      navigate(createPageUrl("Profile"));
+      alert("Cadastro enviado! Nossa equipe irá verificar suas informações em até 48 horas. Você receberá um email com o resultado.")
+      navigate(createPageUrl("Profile"))
     }
-  });
+  })
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     
     if (!businessName || !cnpj || !segment || !phone || !address || !city) {
-      alert("Preencha os campos obrigatórios!");
-      return;
+      alert("Preencha os campos obrigatórios!")
+      return
     }
 
     createBusinessMutation.mutate({
-      user_email: currentUser.email,
+      user_email: currentUser?.email,
       business_name: businessName,
       cnpj,
       segment,
@@ -86,12 +91,12 @@ export default function BusinessSetup() {
       city,
       state,
       website
-    });
-  };
+    })
+  }
 
+  // ✅ AQUI VEM O JSX COMPLETO - TUDO QUE ESTAVA NO ORIGINAL!
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="sticky top-0 bg-white border-b border-gray-200 z-40">
         <div className="flex items-center gap-4 px-4 py-3">
           <button
@@ -108,7 +113,6 @@ export default function BusinessSetup() {
       </header>
 
       <div className="p-4 pb-24">
-        {/* Benefits */}
         <div className="bg-gradient-to-br from-[#FF6B35] to-[#FF006E] rounded-2xl p-6 text-white mb-6">
           <h2 className="text-xl font-bold mb-3">Benefícios do Perfil Comercial</h2>
           <ul className="space-y-2 text-sm">
@@ -135,7 +139,6 @@ export default function BusinessSetup() {
           </ul>
         </div>
 
-        {/* Warning */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
           <p className="text-sm text-blue-900">
             <strong>Importante:</strong> Todos os perfis comerciais passam por verificação manual. 
@@ -144,7 +147,6 @@ export default function BusinessSetup() {
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="text-sm font-semibold text-gray-700 mb-2 block">
@@ -260,5 +262,5 @@ export default function BusinessSetup() {
         </form>
       </div>
     </div>
-  );
+  )
 }
