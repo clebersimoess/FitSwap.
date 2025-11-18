@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { X, Camera, Upload } from "lucide-react";
@@ -22,43 +22,58 @@ export default function EditProfile() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
-        setFullName(user.full_name || "");
-        setBio(user.bio || "");
-        setProfilePhoto(user.profile_photo || "");
-        setCoverPhoto(user.cover_photo || "");
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUser(user)
+        setFullName(user?.user_metadata?.full_name || "")
+        setBio(user?.user_metadata?.bio || "")
+        setProfilePhoto(user?.user_metadata?.profile_photo || "")
+        setCoverPhoto(user?.user_metadata?.cover_photo || "")
       } catch (error) {
-        console.log("User not logged in");
+        console.log("User not logged in")
       }
-    };
-    getUser();
-  }, []);
+    }
+    getUser()
+  }, [])
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.auth.updateMe(data);
+      const { error } = await supabase.auth.updateUser({
+        data: data
+      })
+      if (error) throw error
     },
     onSuccess: () => {
-      navigate(createPageUrl("Profile"));
+      navigate(createPageUrl("Profile"))
     }
-  });
+  })
 
   const handlePhotoUpload = async (file, type) => {
-    setIsUploading(true);
+    setIsUploading(true)
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const fileName = `${Date.now()}-${file.name}`
+      const bucket = type === 'profile' ? 'profile-photos' : 'cover-photos'
+      
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file)
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName)
+
       if (type === 'profile') {
-        setProfilePhoto(file_url);
+        setProfilePhoto(publicUrl)
       } else {
-        setCoverPhoto(file_url);
+        setCoverPhoto(publicUrl)
       }
     } catch (error) {
-      console.error("Error uploading photo:", error);
-      alert("Erro ao fazer upload da foto");
+      console.error("Error uploading photo:", error)
+      alert("Erro ao fazer upload da foto")
     }
-    setIsUploading(false);
-  };
+    setIsUploading(false)
+  }
 
   const handleSave = () => {
     updateProfileMutation.mutate({
@@ -66,15 +81,15 @@ export default function EditProfile() {
       bio: bio,
       profile_photo: profilePhoto,
       cover_photo: coverPhoto
-    });
-  };
+    })
+  }
 
   if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF6B35] border-t-transparent"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -148,7 +163,7 @@ export default function EditProfile() {
                   <img src={profilePhoto} alt="Perfil" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-[#FF6B35] to-[#FF006E] flex items-center justify-center text-white text-3xl font-bold">
-                    {currentUser.full_name?.[0]?.toUpperCase() || 'U'}
+                    {currentUser.user_metadata?.full_name?.[0]?.toUpperCase() || currentUser.email?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
               </div>
@@ -229,5 +244,5 @@ export default function EditProfile() {
         </div>
       </div>
     </div>
-  );
+  )
 }
