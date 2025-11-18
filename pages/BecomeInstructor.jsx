@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/supabaseClient"; // ✅ Mudar para Supabase
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { ArrowLeft, Award, DollarSign, Users, CheckCircle } from "lucide-react";
@@ -30,9 +30,10 @@ export default function BecomeInstructor() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        // ✅ MUDAR PARA SUPABASE
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
-        if (user.bio) setBio(user.bio);
+        if (user?.user_metadata?.bio) setBio(user.user_metadata.bio);
       } catch (error) {
         console.log("User not logged in");
       }
@@ -42,13 +43,18 @@ export default function BecomeInstructor() {
 
   const becomeInstructorMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.auth.updateMe({
-        account_type: 'instrutor',
-        cref: data.cref,
-        specialties: data.specialties,
-        bio: data.bio,
-        is_verified: false // Will be reviewed by admin
+      // ✅ MUDAR PARA SUPABASE
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          account_type: 'instrutor',
+          cref: data.cref,
+          specialties: data.specialties,
+          bio: data.bio,
+          is_verified: false
+        }
       });
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       navigate(createPageUrl("Profile"));
