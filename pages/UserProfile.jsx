@@ -1,6 +1,6 @@
-
+```javascript
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, UserPlus, UserCheck, MoreVertical, Check, Grid, Award } from "lucide-react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
@@ -19,7 +19,7 @@ export default function UserProfile() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
         
         if (user.id === userId) {
@@ -35,92 +35,141 @@ export default function UserProfile() {
   const { data: profileUser, isLoading: loadingUser } = useQuery({
     queryKey: ['user', userId],
     queryFn: async () => {
-      const users = await base44.entities.User.list();
-      return users.find(u => u.id === userId);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000
   });
 
   const { data: userPosts = [], isLoading: loadingPosts } = useQuery({
-    queryKey: ['userPosts', profileUser?.email],
+    queryKey: ['userPosts', profileUser?.id],
     queryFn: async () => {
-      if (!profileUser?.email) return [];
-      return await base44.entities.Post.filter({ created_by: profileUser.email }, '-created_date');
+      if (!profileUser?.id) return [];
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('user_id', profileUser.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!profileUser?.email,
+    enabled: !!profileUser?.id,
     initialData: [],
     staleTime: 2 * 60 * 1000
   });
 
   const { data: follows = [] } = useQuery({
-    queryKey: ['follows', currentUser?.email],
+    queryKey: ['follows', currentUser?.id],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Follow.filter({ follower_email: currentUser.email });
+      if (!currentUser?.id) return [];
+      const { data, error } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('follower_id', currentUser.id);
+      
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!currentUser?.email,
+    enabled: !!currentUser?.id,
     initialData: [],
     staleTime: 1 * 60 * 1000
   });
 
   const { data: followersCount = 0 } = useQuery({
-    queryKey: ['followersCount', profileUser?.email],
+    queryKey: ['followersCount', profileUser?.id],
     queryFn: async () => {
-      if (!profileUser?.email) return 0;
-      const followers = await base44.entities.Follow.filter({ following_email: profileUser.email });
-      return followers.length;
+      if (!profileUser?.id) return 0;
+      const { data, error } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('following_id', profileUser.id);
+      
+      if (error) throw error;
+      return data?.length || 0;
     },
-    enabled: !!profileUser?.email,
+    enabled: !!profileUser?.id,
     initialData: 0
   });
 
   const { data: followingCount = 0 } = useQuery({
-    queryKey: ['followingCount', profileUser?.email],
+    queryKey: ['followingCount', profileUser?.id],
     queryFn: async () => {
-      if (!profileUser?.email) return 0;
-      const following = await base44.entities.Follow.filter({ follower_email: profileUser.email });
-      return following.length;
+      if (!profileUser?.id) return 0;
+      const { data, error } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('follower_id', profileUser.id);
+      
+      if (error) throw error;
+      return data?.length || 0;
     },
-    enabled: !!profileUser?.email,
+    enabled: !!profileUser?.id,
     initialData: 0
   });
 
   // New: Fetch user achievements
   const { data: achievements = [] } = useQuery({
-    queryKey: ['userAchievements', profileUser?.email],
+    queryKey: ['userAchievements', profileUser?.id],
     queryFn: async () => {
-      if (!profileUser?.email) return [];
-      return await base44.entities.Achievement.filter({ user_email: profileUser.email }, '-unlocked_at');
+      if (!profileUser?.id) return [];
+      const { data, error } = await supabase
+        .from('achievements')
+        .select('*')
+        .eq('user_id', profileUser.id)
+        .order('unlocked_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!profileUser?.email,
+    enabled: !!profileUser?.id,
     initialData: []
   });
 
   const totalPoints = achievements.reduce((sum, a) => sum + (a.points || 0), 0);
 
-  const isFollowing = follows.some(f => f.following_email === profileUser?.email);
+  const isFollowing = follows.some(f => f.following_id === profileUser?.id);
 
   const followMutation = useMutation({
     mutationFn: async () => {
       if (isFollowing) {
-        const followRecord = follows.find(f => f.following_email === profileUser.email);
+        const followRecord = follows.find(f => f.following_id === profileUser.id);
         if (followRecord) {
-          await base44.entities.Follow.delete(followRecord.id);
+          const { error } = await supabase
+            .from('follows')
+            .delete()
+            .eq('id', followRecord.id);
+          
+          if (error) throw error;
         }
       } else {
-        await base44.entities.Follow.create({
-          follower_email: currentUser.email,
-          following_email: profileUser.email
-        });
+        const { error: followError } = await supabase
+          .from('follows')
+          .insert({
+            follower_id: currentUser.id,
+            following_id: profileUser.id
+          });
+        
+        if (followError) throw followError;
 
-        await base44.entities.Notification.create({
-          user_email: profileUser.email,
-          type: "follow",
-          from_user_name: currentUser.full_name,
-          from_user_email: currentUser.email,
-          text: "começou a te seguir"
-        });
+        const { error: notifError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: profileUser.id,
+            type: "follow",
+            from_user_id: currentUser.id,
+            from_user_name: currentUser.user_metadata?.full_name || currentUser.email,
+            text: "começou a te seguir"
+          });
+        
+        if (notifError) throw notifError;
       }
     },
     onSuccess: () => {
@@ -166,7 +215,7 @@ export default function UserProfile() {
             <ArrowLeft className="w-6 h-6 text-gray-700" />
           </button>
           <h1 className="text-lg font-semibold text-gray-900">
-            @{profileUser.email?.split('@')[0]}
+            @{profileUser.username}
           </h1>
           <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
             <MoreVertical className="w-6 h-6 text-gray-700" />
@@ -185,11 +234,11 @@ export default function UserProfile() {
       <div className="px-4 pb-4">
         <div className="relative -mt-16 mb-4">
           <div className="w-32 h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-lg">
-            {profileUser.profile_photo ? (
-              <img src={profileUser.profile_photo} alt={profileUser.full_name} className="w-full h-full object-cover" />
+            {profileUser.avatar_url ? (
+              <img src={profileUser.avatar_url} alt={profileUser.username} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[#FF6B35] to-[#FF006E] flex items-center justify-center text-white text-4xl font-bold">
-                {profileUser.full_name?.[0]?.toUpperCase() || 'U'}
+                {profileUser.username?.[0]?.toUpperCase() || 'U'}
               </div>
             )}
           </div>
@@ -202,7 +251,7 @@ export default function UserProfile() {
 
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-gray-900">{profileUser.full_name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{profileUser.username}</h1>
             {profileUser.account_type === 'instructor' && profileUser.is_verified && (
               <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
                 <Award className="w-3 h-3 text-white" />
@@ -210,7 +259,7 @@ export default function UserProfile() {
               </div>
             )}
           </div>
-          <p className="text-gray-500">@{profileUser.email?.split('@')[0]}</p>
+          <p className="text-gray-500">@{profileUser.username}</p>
           {profileUser.account_type === 'instructor' && (
             <div className="flex items-center gap-2 mt-2">
               <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
@@ -258,12 +307,10 @@ export default function UserProfile() {
               </Button>
             )
           )}
-          {/* For now, message button is always there, consider making it conditional later */}
           <Button variant="outline" className="flex-1">
             Mensagem
           </Button>
         </div>
-
 
         {/* Achievements Display */}
         {achievements.length > 0 && (
@@ -320,7 +367,7 @@ export default function UserProfile() {
             <p className="text-sm text-gray-500">Posts</p>
           </div>
           <Link
-            to={`${createPageUrl('Followers')}?email=${profileUser.email}&tab=followers`}
+            to={`${createPageUrl('Followers')}?id=${profileUser.id}&tab=followers`}
             className="text-center hover:bg-gray-50 rounded-lg transition-colors"
           >
             <p className="text-2xl font-bold text-gray-900">{followersCount}</p>
@@ -329,7 +376,7 @@ export default function UserProfile() {
             </p>
           </Link>
           <Link
-            to={`${createPageUrl('Followers')}?email=${profileUser.email}&tab=following`}
+            to={`${createPageUrl('Followers')}?id=${profileUser.id}&tab=following`}
             className="text-center hover:bg-gray-50 rounded-lg transition-colors"
           >
             <p className="text-2xl font-bold text-gray-900">{followingCount}</p>
@@ -372,3 +419,4 @@ export default function UserProfile() {
     </div>
   );
 }
+```
