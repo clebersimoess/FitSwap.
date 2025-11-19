@@ -31,50 +31,31 @@ function PagesContent() {
     return (
         <Layout>
             <Routes>
-                {/* Autenticação */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/welcome" element={<WelcomeScreen />} />
                 <Route path="/account-type" element={<AccountTypeSelector />} />
-                
-                {/* Páginas Principais */}
                 <Route path="/" element={<Home />} />
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Settings />} />
-                
-                {/* Posts e Conteúdo */}
                 <Route path="/create-post" element={<CreatePost />} />
-                
-                {/* Treinos e Planos */}
                 <Route path="/log-workout" element={<LogWorkout />} />
                 <Route path="/workout-history" element={<WorkoutHistory />} />
                 <Route path="/create-workout-plan" element={<CreateWorkoutPlan />} />
                 <Route path="/my-subscriptions" element={<MySubscriptions />} />
-                
-                {/* Comunidades */}
                 <Route path="/communities" element={<Communities />} />
                 <Route path="/community/:id" element={<CommunityView />} />
                 <Route path="/edit-community" element={<EditCommunity />} />
                 <Route path="/manage-members" element={<ManageCommunityMembers />} />
-                
-                {/* Instrutores */}
                 <Route path="/instructor-panel" element={<InstructorPanel />} />
                 <Route path="/instructor-analytics" element={<InstructorAnalytics />} />
                 <Route path="/instructor-chat" element={<InstructorChat />} />
-                
-                {/* Desafios */}
                 <Route path="/challenge-proof" element={<ChallengeProof />} />
-                
-                {/* Chat */}
                 <Route path="/messages" element={<DirectMessages />} />
-                
-                {/* Legal */}
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/permissions" element={<PermissionsHelp />} />
-                
-                {/* Ads */}
                 <Route path="/manage-ads" element={<ManageAds />} />
             </Routes>
         </Layout>
