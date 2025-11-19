@@ -1,76 +1,66 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Layout from './Layout';
+import Login from './Login';
+import Register from './Register';
+import Feed from './Feed';
+import CreatePost from './CreatePost';
+import MySubscriptions from './MySubscriptions';
+import LogWorkout from './LogWorkout';
+import WorkoutHistory from './WorkoutHistory';
+import ChallengeProof from './ChallengeProof';
+import InstructorAnalytics from './InstructorAnalytics';
+import Communities from './Communities';
+import ManageAds from './ManageAds';
+import PrivacyPolicy from './PrivacyPolicy';
+import PermissionsHelp from './PermissionsHelp';
+import CommunityView from './CommunityView';
+import AccountTypeSelector from './AccountTypeSelector';
+import InstructorPanel from './InstructorPanel';
+import TermsOfService from './TermsOfService';
+import DirectMessages from './DirectMessages';
+import ManageCommunityMembers from './ManageCommunityMembers';
+import EditCommunity from './EditCommunity';
+import InstructorChat from './InstructorChat';
+import CreateWorkoutPlan from './CreateWorkoutPlan';
+import WelcomeScreen from './WelcomeScreen';
 
-export default function CreatePost() {
-  const [content, setContent] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+function PagesContent() {
+    return (
+        <Layout>
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/create-post" element={<CreatePost />} />
+                <Route path="/" element={<Feed />} />
+                
+                <Route path="/MySubscriptions" element={<MySubscriptions />} />
+                <Route path="/LogWorkout" element={<LogWorkout />} />
+                <Route path="/WorkoutHistory" element={<WorkoutHistory />} />
+                <Route path="/ChallengeProof" element={<ChallengeProof />} />
+                <Route path="/InstructorAnalytics" element={<InstructorAnalytics />} />
+                <Route path="/Communities" element={<Communities />} />
+                <Route path="/ManageAds" element={<ManageAds />} />
+                <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
+                <Route path="/PermissionsHelp" element={<PermissionsHelp />} />
+                <Route path="/CommunityView" element={<CommunityView />} />
+                <Route path="/AccountTypeSelector" element={<AccountTypeSelector />} />
+                <Route path="/InstructorPanel" element={<InstructorPanel />} />
+                <Route path="/TermsOfService" element={<TermsOfService />} />
+                <Route path="/DirectMessages" element={<DirectMessages />} />
+                <Route path="/ManageCommunityMembers" element={<ManageCommunityMembers />} />
+                <Route path="/EditCommunity" element={<EditCommunity />} />
+                <Route path="/InstructorChat" element={<InstructorChat />} />
+                <Route path="/CreateWorkoutPlan" element={<CreateWorkoutPlan />} />
+                <Route path="/WelcomeScreen" element={<WelcomeScreen />} />
+            </Routes>
+        </Layout>
+    );
+}
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!content.trim()) return;
-
-    setIsLoading(true);
-    try {
-      // TODO: Implementar lógica de criação de post com Supabase
-      console.log('Criando post:', content);
-      
-      // Simulando criação
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirecionar para home após criar
-      navigate('/');
-    } catch (error) {
-      console.error('Erro ao criar post:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">
-            Criar Nova Publicação
-          </h1>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-                Conteúdo da publicação
-              </label>
-              <textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Compartilhe seus pensamentos, treinos ou conquistas..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows="6"
-                required
-              />
-            </div>
-            
-            <div className="flex items-center justify-between pt-4">
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                Cancelar
-              </button>
-              
-              <button
-                type="submit"
-                disabled={!content.trim() || isLoading}
-                className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Publicando...' : 'Publicar'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
+export default function Pages() {
+    return (
+        <Router>
+            <PagesContent />
+        </Router>
+    );
 }
