@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { X, Heart, ChevronDown } from "lucide-react";
 import { createPageUrl } from "@/utils";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -37,7 +36,7 @@ export default function ViewStories() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
       } catch (error) {
         console.log("User not logged in");
@@ -50,8 +49,14 @@ export default function ViewStories() {
     queryKey: ['advertisement', adId],
     queryFn: async () => {
       if (!adId) return null;
-      const ads = await base44.entities.Advertisement.list();
-      return ads.find(a => a.id === adId);
+      const { data, error } = await supabase
+        .from('advertisements')
+        .select('*')
+        .eq('id', adId)
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
     enabled: !!adId
   });
@@ -59,9 +64,15 @@ export default function ViewStories() {
   const { data: allStories = [] } = useQuery({
     queryKey: ['allStories'],
     queryFn: async () => {
-      const stories = await base44.entities.Story.list('-created_date');
+      const { data, error } = await supabase
+        .from('stories')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
       const now = new Date();
-      return stories.filter(story => {
+      return (data || []).filter(story => {
         const expiresAt = new Date(story.expires_at);
         return expiresAt > now;
       });
@@ -71,7 +82,14 @@ export default function ViewStories() {
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['allUsers'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
+    },
     staleTime: 5 * 60 * 1000,
     initialData: []
   });
@@ -79,20 +97,25 @@ export default function ViewStories() {
   // Mark story as viewed
   const markViewedMutation = useMutation({
     mutationFn: async (storyId) => {
-      if (!currentUser?.email) return;
+      if (!currentUser?.id) return;
       
       // Check if already viewed
-      const existingViews = await base44.entities.StoryView.filter({
-        story_id: storyId,
-        viewer_email: currentUser.email
-      });
+      const { data: existingViews } = await supabase
+        .from('story_views')
+        .select('*')
+        .eq('story_id', storyId)
+        .eq('viewer_id', currentUser.id);
       
-      if (existingViews.length === 0) {
-        await base44.entities.StoryView.create({
-          story_id: storyId,
-          viewer_email: currentUser.email,
-          viewed_at: new Date().toISOString()
-        });
+      if (!existingViews || existingViews.length === 0) {
+        const { error } = await supabase
+          .from('story_views')
+          .insert({
+            story_id: storyId,
+            viewer_id: currentUser.id,
+            viewed_at: new Date().toISOString()
+          });
+        
+        if (error) throw error;
       }
     },
     onSuccess: () => {
@@ -104,22 +127,22 @@ export default function ViewStories() {
     if (allStories.length > 0 && storyId) {
       const grouped = {};
       allStories.forEach(story => {
-        if (!grouped[story.created_by]) {
-          grouped[story.created_by] = [];
+        if (!grouped[story.user_id]) {
+          grouped[story.user_id] = [];
         }
-        grouped[story.created_by].push(story);
+        grouped[story.user_id].push(story);
       });
 
       const groupedArray = Object.entries(grouped).map(([creator, stories]) => ({
         creator,
-        stories: stories.sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
+        stories: stories.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
       }));
 
       setAllGroupedStories(groupedArray);
 
       const currentStory = allStories.find(s => s.id === storyId);
       if (currentStory) {
-        const groupIndex = groupedArray.findIndex(g => g.creator === currentStory.created_by);
+        const groupIndex = groupedArray.findIndex(g => g.creator === currentStory.user_id);
         const storyIndex = groupedArray[groupIndex]?.stories.findIndex(s => s.id === storyId);
         
         setCurrentGroupIndex(groupIndex);
@@ -130,48 +153,67 @@ export default function ViewStories() {
   }, [allStories, storyId]);
 
   const currentStory = currentUserStories[currentStoryIndex];
-  const currentCreatorUser = allUsers.find(u => u.email === currentStory?.created_by);
+  const currentCreatorUser = allUsers.find(u => u.id === currentStory?.user_id);
 
   // Mark current story as viewed
   useEffect(() => {
-    if (currentStory?.id && currentUser?.email) {
+    if (currentStory?.id && currentUser?.id) {
       markViewedMutation.mutate(currentStory.id);
     }
-  }, [currentStory?.id, currentUser?.email]);
+  }, [currentStory?.id, currentUser?.id]);
 
   const { data: likes = [] } = useQuery({
     queryKey: ['storyLikes', currentStory?.id],
     queryFn: async () => {
       if (!currentStory?.id) return [];
-      return await base44.entities.StoryLike.filter({ story_id: currentStory.id });
+      const { data, error } = await supabase
+        .from('story_likes')
+        .select('*')
+        .eq('story_id', currentStory.id);
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!currentStory?.id
   });
 
-  const isLiked = likes.some(like => like.user_email === currentUser?.email);
+  const isLiked = likes.some(like => like.user_id === currentUser?.id);
 
   const likeMutation = useMutation({
     mutationFn: async () => {
       if (isLiked) {
-        const userLike = likes.find(like => like.user_email === currentUser.email);
+        const userLike = likes.find(like => like.user_id === currentUser.id);
         if (userLike) {
-          await base44.entities.StoryLike.delete(userLike.id);
+          const { error } = await supabase
+            .from('story_likes')
+            .delete()
+            .eq('id', userLike.id);
+          
+          if (error) throw error;
         }
       } else {
-        await base44.entities.StoryLike.create({
-          story_id: currentStory.id,
-          user_email: currentUser.email,
-          user_name: currentUser.full_name
-        });
-
-        if (currentStory.created_by !== currentUser.email) {
-          await base44.entities.Notification.create({
-            user_email: currentStory.created_by,
-            type: "like",
-            from_user_name: currentUser.full_name,
-            from_user_email: currentUser.email,
-            text: "curtiu seu status"
+        const { error: likeError } = await supabase
+          .from('story_likes')
+          .insert({
+            story_id: currentStory.id,
+            user_id: currentUser.id,
+            user_name: currentUser.user_metadata?.full_name || currentUser.email
           });
+        
+        if (likeError) throw likeError;
+
+        if (currentStory.user_id !== currentUser.id) {
+          const { error: notifError } = await supabase
+            .from('notifications')
+            .insert({
+              user_id: currentStory.user_id,
+              type: "like",
+              from_user_id: currentUser.id,
+              from_user_name: currentUser.user_metadata?.full_name || currentUser.email,
+              text: "curtiu seu status"
+            });
+          
+          if (notifError) throw notifError;
         }
       }
     },
@@ -381,29 +423,29 @@ export default function ViewStories() {
         <div className="absolute top-0 left-0 right-0 z-10 p-4 pt-6 bg-gradient-to-b from-black/60 to-transparent">
           <div className="flex items-center justify-between">
             <Link 
-              to={`${createPageUrl('UserProfile')}?id=${currentCreatorUser?.id || currentStory.created_by}`}
+              to={`${createPageUrl('UserProfile')}?id=${currentCreatorUser?.id || currentStory.user_id}`}
               className="flex items-center gap-3"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white">
-                {currentCreatorUser?.profile_photo ? (
+                {currentCreatorUser?.avatar_url ? (
                   <img
-                    src={currentCreatorUser.profile_photo}
-                    alt={currentCreatorUser.full_name}
+                    src={currentCreatorUser.avatar_url}
+                    alt={currentCreatorUser.username}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-[#FF6B35] to-[#FF006E] flex items-center justify-center text-white font-bold text-sm">
-                    {currentStory.created_by?.[0]?.toUpperCase() || 'U'}
+                    {currentCreatorUser?.username?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
               </div>
               <div>
                 <p className="text-white font-semibold text-sm hover:underline">
-                  {currentCreatorUser?.full_name?.split(' ')[0] || currentStory.created_by?.split('@')[0] || 'Usuário'}
+                  {currentCreatorUser?.username?.split(' ')[0] || 'Usuário'}
                 </p>
                 <p className="text-white/80 text-xs">
-                  {currentStory.created_date && formatDistanceToNow(new Date(currentStory.created_date), {
+                  {currentStory.created_at && formatDistanceToNow(new Date(currentStory.created_at), {
                     addSuffix: true,
                     locale: ptBR
                   })}
@@ -476,7 +518,7 @@ export default function ViewStories() {
         </div>
 
         {/* Like Button */}
-        {currentStory.created_by !== currentUser?.email && currentUser && (
+        {currentStory.user_id !== currentUser?.id && currentUser && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -490,7 +532,7 @@ export default function ViewStories() {
               }`}
             />
           </button>
-        )}
+        );
 
         {/* Bottom Indicators */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none">
