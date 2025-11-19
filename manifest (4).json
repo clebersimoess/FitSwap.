@@ -7,33 +7,19 @@
   "scope": "/",
   "short_name": "fitswap",
   "start_url": "/",
-  "theme_color": "#ffffff",
+  "theme_color": "#FF6B35",
   "icons": [
     {
-      "src": "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/690a8aa464e2b1883929d875/7b293487d_logo.png",
-      "type": "image/jpeg",
-      "sizes": "480x480",
-      "isSquare": true,
-      "isPng": true,
-      "isWebp": false,
-      "isJpg": true,
-      "width": 480,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
     },
     {
-      "src": "https://fitswap.org/favicon.ico",
-      "type": "image/x-icon",
-      "sizes": "480x480",
-      "isSquare": true,
-      "isPng": false,
-      "isWebp": false,
-      "isJpg": false,
-      "width": 480,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
     }
   ],
   "display_override": [
@@ -42,5 +28,8 @@
     "browser",
     "fullscreen",
     "minimal-ui"
-  ]
+  ],
+  "categories": ["health", "fitness", "social"],
+  "description": "Comunidade fitness onde atletas e instrutores se conectam",
+  "lang": "pt-BR"
 }
