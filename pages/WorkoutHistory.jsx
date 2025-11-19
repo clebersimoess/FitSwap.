@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, TrendingUp, Calendar, Award } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +17,7 @@ export default function WorkoutHistory() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
       } catch (error) {
         console.log("User not logged in");
@@ -27,22 +27,36 @@ export default function WorkoutHistory() {
   }, []);
 
   const { data: workouts = [] } = useQuery({
-    queryKey: ['workoutLogs', currentUser?.email],
+    queryKey: ['workoutLogs', currentUser?.id],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.WorkoutLog.filter({ user_email: currentUser.email }, '-created_date');
+      if (!currentUser?.id) return [];
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!currentUser?.email,
+    enabled: !!currentUser?.id,
     initialData: []
   });
 
   const { data: achievements = [] } = useQuery({
-    queryKey: ['achievements', currentUser?.email],
+    queryKey: ['achievements', currentUser?.id],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Achievement.filter({ user_email: currentUser.email }, '-unlocked_at');
+      if (!currentUser?.id) return [];
+      const { data, error } = await supabase
+        .from('achievements')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('unlocked_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!currentUser?.email,
+    enabled: !!currentUser?.id,
     initialData: []
   });
 
@@ -199,9 +213,9 @@ export default function WorkoutHistory() {
                             <span>• {workout.exercises.length} exercícios</span>
                           )}
                         </div>
-                        {workout.created_date && (
+                        {workout.created_at && (
                           <p className="text-xs text-gray-400 mt-2">
-                            {format(new Date(workout.created_date), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                            {format(new Date(workout.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
                           </p>
                         )}
                       </div>
