@@ -1,9 +1,10 @@
+```javascript
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Dumbbell, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 
 export default function WelcomeScreen() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ export default function WelcomeScreen() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
       } catch (error) {
         console.log("User not logged in");
@@ -87,7 +88,7 @@ export default function WelcomeScreen() {
               className="mt-6 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20"
             >
               <p className="text-white font-semibold text-lg">
-                Olá, {currentUser.full_name?.split(' ')[0] || 'Atleta'}! 👋
+                Olá, {currentUser.user_metadata?.full_name?.split(' ')[0] || currentUser.email?.split('@')[0] || 'Atleta'}! 👋
               </p>
             </motion.div>
           )}
@@ -134,3 +135,4 @@ export default function WelcomeScreen() {
     </div>
   );
 }
+```
