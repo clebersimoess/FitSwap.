@@ -1,4 +1,4 @@
-import { supabase } from './base44Client';
+import { supabase } from './supabaseClient';
 
 // Supabase tables - adjust table names to match your Supabase schema
 export const Post = () => supabase.from('posts');
