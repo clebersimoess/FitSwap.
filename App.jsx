@@ -1,6 +1,6 @@
 import './App.css'
-import Pages from "./pages/index.jsx"  // Remove o @
-import { Toaster } from "./components/ui/toaster"  // Remove o @
+import Pages from "./pages/index.jsx"  
+import { Toaster } from "./components/ui/toaster" 
 
 function App() {
   return (
