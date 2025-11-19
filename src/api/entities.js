@@ -1,59 +1,32 @@
-import { base44 } from './base44Client';
+import { supabase } from './base44Client';
 
+// Supabase tables - adjust table names to match your Supabase schema
+export const Post = () => supabase.from('posts');
+export const Story = () => supabase.from('stories');
+export const Like = () => supabase.from('likes');
+export const Comment = () => supabase.from('comments');
+export const Follow = () => supabase.from('follows');
+export const Notification = () => supabase.from('notifications');
+export const StoryLike = () => supabase.from('story_likes');
+export const SavedPost = () => supabase.from('saved_posts');
+export const BusinessProfile = () => supabase.from('business_profiles');
+export const Advertisement = () => supabase.from('advertisements');
+export const WorkoutPlan = () => supabase.from('workout_plans');
+export const Subscription = () => supabase.from('subscriptions');
+export const Challenge = () => supabase.from('challenges');
+export const ChallengeParticipant = () => supabase.from('challenge_participants');
+export const ChatMessage = () => supabase.from('chat_messages');
+export const WorkoutLog = () => supabase.from('workout_logs');
+export const Achievement = () => supabase.from('achievements');
+export const StoryView = () => supabase.from('story_views');
+export const ChallengeProofSubmission = () => supabase.from('challenge_proof_submissions');
+export const GymProfile = () => supabase.from('gym_profiles');
+export const Community = () => supabase.from('communities');
+export const CommunityMember = () => supabase.from('community_members');
+export const CommunityPost = () => supabase.from('community_posts');
+export const CommunityReport = () => supabase.from('community_reports');
+export const InstructorStudent = () => supabase.from('instructor_students');
+export const PrivateChallenge = () => supabase.from('private_challenges');
 
-export const Post = base44.entities.Post;
-
-export const Story = base44.entities.Story;
-
-export const Like = base44.entities.Like;
-
-export const Comment = base44.entities.Comment;
-
-export const Follow = base44.entities.Follow;
-
-export const Notification = base44.entities.Notification;
-
-export const StoryLike = base44.entities.StoryLike;
-
-export const SavedPost = base44.entities.SavedPost;
-
-export const BusinessProfile = base44.entities.BusinessProfile;
-
-export const Advertisement = base44.entities.Advertisement;
-
-export const WorkoutPlan = base44.entities.WorkoutPlan;
-
-export const Subscription = base44.entities.Subscription;
-
-export const Challenge = base44.entities.Challenge;
-
-export const ChallengeParticipant = base44.entities.ChallengeParticipant;
-
-export const ChatMessage = base44.entities.ChatMessage;
-
-export const WorkoutLog = base44.entities.WorkoutLog;
-
-export const Achievement = base44.entities.Achievement;
-
-export const StoryView = base44.entities.StoryView;
-
-export const ChallengeProofSubmission = base44.entities.ChallengeProofSubmission;
-
-export const GymProfile = base44.entities.GymProfile;
-
-export const Community = base44.entities.Community;
-
-export const CommunityMember = base44.entities.CommunityMember;
-
-export const CommunityPost = base44.entities.CommunityPost;
-
-export const CommunityReport = base44.entities.CommunityReport;
-
-export const InstructorStudent = base44.entities.InstructorStudent;
-
-export const PrivateChallenge = base44.entities.PrivateChallenge;
-
-
-
-// auth sdk:
-export const User = base44.auth;
+// Auth - Supabase uses supabase.auth directly
+export const User = supabase.auth;
