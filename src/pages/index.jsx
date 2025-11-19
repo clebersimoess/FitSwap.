@@ -1,279 +1,76 @@
-import Layout from "./Layout.jsx";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import Home from "./Home";
+export default function CreatePost() {
+  const [content, setContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-import CreateStory from "./CreateStory";
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!content.trim()) return;
 
-import ViewStories from "./ViewStories";
-
-import CreatePost from "./CreatePost";
-
-import Profile from "./Profile";
-
-import Notifications from "./Notifications";
-
-import Explore from "./Explore";
-
-import EditProfile from "./EditProfile";
-
-import Settings from "./Settings";
-
-import UserProfile from "./UserProfile";
-
-import Followers from "./Followers";
-
-import BusinessSetup from "./BusinessSetup";
-
-import BecomeInstructor from "./BecomeInstructor";
-
-import InstructorDashboard from "./InstructorDashboard";
-
-import MarketplacePlans from "./MarketplacePlans";
-
-import Challenges from "./Challenges";
-
-import CreatePlan from "./CreatePlan";
-
-import PlanDetails from "./PlanDetails";
-
-import CreateChallenge from "./CreateChallenge";
-
-import StudentChat from "./StudentChat";
-
-import MySubscriptions from "./MySubscriptions";
-
-import LogWorkout from "./LogWorkout";
-
-import WorkoutHistory from "./WorkoutHistory";
-
-import ChallengeProof from "./ChallengeProof";
-
-import InstructorAnalytics from "./InstructorAnalytics";
-
-import Communities from "./Communities";
-
-import ManageAds from "./ManageAds";
-
-import PrivacyPolicy from "./PrivacyPolicy";
-
-import PermissionsHelp from "./PermissionsHelp";
-
-import CommunityView from "./CommunityView";
-
-import AccountTypeSelector from "./AccountTypeSelector";
-
-import InstructorPanel from "./InstructorPanel";
-
-import TermsOfService from "./TermsOfService";
-
-import DirectMessages from "./DirectMessages";
-
-import ManageCommunityMembers from "./ManageCommunityMembers";
-
-import EditCommunity from "./EditCommunity";
-
-import InstructorChat from "./InstructorChat";
-
-import CreateWorkoutPlan from "./CreateWorkoutPlan";
-
-import WelcomeScreen from "./WelcomeScreen";
-
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
-
-const PAGES = {
-    
-    Home: Home,
-    
-    CreateStory: CreateStory,
-    
-    ViewStories: ViewStories,
-    
-    CreatePost: CreatePost,
-    
-    Profile: Profile,
-    
-    Notifications: Notifications,
-    
-    Explore: Explore,
-    
-    EditProfile: EditProfile,
-    
-    Settings: Settings,
-    
-    UserProfile: UserProfile,
-    
-    Followers: Followers,
-    
-    BusinessSetup: BusinessSetup,
-    
-    BecomeInstructor: BecomeInstructor,
-    
-    InstructorDashboard: InstructorDashboard,
-    
-    MarketplacePlans: MarketplacePlans,
-    
-    Challenges: Challenges,
-    
-    CreatePlan: CreatePlan,
-    
-    PlanDetails: PlanDetails,
-    
-    CreateChallenge: CreateChallenge,
-    
-    StudentChat: StudentChat,
-    
-    MySubscriptions: MySubscriptions,
-    
-    LogWorkout: LogWorkout,
-    
-    WorkoutHistory: WorkoutHistory,
-    
-    ChallengeProof: ChallengeProof,
-    
-    InstructorAnalytics: InstructorAnalytics,
-    
-    Communities: Communities,
-    
-    ManageAds: ManageAds,
-    
-    PrivacyPolicy: PrivacyPolicy,
-    
-    PermissionsHelp: PermissionsHelp,
-    
-    CommunityView: CommunityView,
-    
-    AccountTypeSelector: AccountTypeSelector,
-    
-    InstructorPanel: InstructorPanel,
-    
-    TermsOfService: TermsOfService,
-    
-    DirectMessages: DirectMessages,
-    
-    ManageCommunityMembers: ManageCommunityMembers,
-    
-    EditCommunity: EditCommunity,
-    
-    InstructorChat: InstructorChat,
-    
-    CreateWorkoutPlan: CreateWorkoutPlan,
-    
-    WelcomeScreen: WelcomeScreen,
-    
-}
-
-function _getCurrentPage(url) {
-    if (url.endsWith('/')) {
-        url = url.slice(0, -1);
+    setIsLoading(true);
+    try {
+      // TODO: Implementar lógica de criação de post com Supabase
+      console.log('Criando post:', content);
+      
+      // Simulando criação
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Redirecionar para home após criar
+      navigate('/');
+    } catch (error) {
+      console.error('Erro ao criar post:', error);
+    } finally {
+      setIsLoading(false);
     }
-    let urlLastPart = url.split('/').pop();
-    if (urlLastPart.includes('?')) {
-        urlLastPart = urlLastPart.split('?')[0];
-    }
+  };
 
-    const pageName = Object.keys(PAGES).find(page => page.toLowerCase() === urlLastPart.toLowerCase());
-    return pageName || Object.keys(PAGES)[0];
-}
-
-// Create a wrapper component that uses useLocation inside the Router context
-function PagesContent() {
-    const location = useLocation();
-    const currentPage = _getCurrentPage(location.pathname);
-    
-    return (
-        <Layout currentPageName={currentPage}>
-            <Routes>            
-                
-                    <Route path="/" element={<Home />} />
-                
-                
-                <Route path="/Home" element={<Home />} />
-                
-                <Route path="/CreateStory" element={<CreateStory />} />
-                
-                <Route path="/ViewStories" element={<ViewStories />} />
-                
-                <Route path="/CreatePost" element={<CreatePost />} />
-                
-                <Route path="/Profile" element={<Profile />} />
-                
-                <Route path="/Notifications" element={<Notifications />} />
-                
-                <Route path="/Explore" element={<Explore />} />
-                
-                <Route path="/EditProfile" element={<EditProfile />} />
-                
-                <Route path="/Settings" element={<Settings />} />
-                
-                <Route path="/UserProfile" element={<UserProfile />} />
-                
-                <Route path="/Followers" element={<Followers />} />
-                
-                <Route path="/BusinessSetup" element={<BusinessSetup />} />
-                
-                <Route path="/BecomeInstructor" element={<BecomeInstructor />} />
-                
-                <Route path="/InstructorDashboard" element={<InstructorDashboard />} />
-                
-                <Route path="/MarketplacePlans" element={<MarketplacePlans />} />
-                
-                <Route path="/Challenges" element={<Challenges />} />
-                
-                <Route path="/CreatePlan" element={<CreatePlan />} />
-                
-                <Route path="/PlanDetails" element={<PlanDetails />} />
-                
-                <Route path="/CreateChallenge" element={<CreateChallenge />} />
-                
-                <Route path="/StudentChat" element={<StudentChat />} />
-                
-                <Route path="/MySubscriptions" element={<MySubscriptions />} />
-                
-                <Route path="/LogWorkout" element={<LogWorkout />} />
-                
-                <Route path="/WorkoutHistory" element={<WorkoutHistory />} />
-                
-                <Route path="/ChallengeProof" element={<ChallengeProof />} />
-                
-                <Route path="/InstructorAnalytics" element={<InstructorAnalytics />} />
-                
-                <Route path="/Communities" element={<Communities />} />
-                
-                <Route path="/ManageAds" element={<ManageAds />} />
-                
-                <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
-                
-                <Route path="/PermissionsHelp" element={<PermissionsHelp />} />
-                
-                <Route path="/CommunityView" element={<CommunityView />} />
-                
-                <Route path="/AccountTypeSelector" element={<AccountTypeSelector />} />
-                
-                <Route path="/InstructorPanel" element={<InstructorPanel />} />
-                
-                <Route path="/TermsOfService" element={<TermsOfService />} />
-                
-                <Route path="/DirectMessages" element={<DirectMessages />} />
-                
-                <Route path="/ManageCommunityMembers" element={<ManageCommunityMembers />} />
-                
-                <Route path="/EditCommunity" element={<EditCommunity />} />
-                
-                <Route path="/InstructorChat" element={<InstructorChat />} />
-                
-                <Route path="/CreateWorkoutPlan" element={<CreateWorkoutPlan />} />
-                
-                <Route path="/WelcomeScreen" element={<WelcomeScreen />} />
-                
-            </Routes>
-        </Layout>
-    );
-}
-
-export default function Pages() {
-    return (
-        <Router>
-            <PagesContent />
-        </Router>
-    );
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">
+            Criar Nova Publicação
+          </h1>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+                Conteúdo da publicação
+              </label>
+              <textarea
+                id="content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Compartilhe seus pensamentos, treinos ou conquistas..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows="6"
+                required
+              />
+            </div>
+            
+            <div className="flex items-center justify-between pt-4">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Cancelar
+              </button>
+              
+              <button
+                type="submit"
+                disabled={!content.trim() || isLoading}
+                className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Publicando...' : 'Publicar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 }
