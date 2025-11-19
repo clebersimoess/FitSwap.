@@ -1,118 +1,69 @@
-import React, { useState, useRef } from "react";
-import { X, Plus, Trash2, Image as ImageIcon, Camera, Video, Play } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { supabase } from "@/supabaseClient"; 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const CATEGORIES = ["Musculação", "Cardio", "Yoga", "Crossfit", "Corrida", "Funcional"];
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+import React, { useState } from 'react';
 
 export default function CreatePost() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [media, setMedia] = useState([]);
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [exercises, setExercises] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [showMediaOptions, setShowMediaOptions] = useState(false);
-  const galleryInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
-  const videoInputRef = useRef(null);
+  const [content, setContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const createPostMutation = useMutation({
-    mutationFn: async (postData) => {
-      
-      const { data, error } = await supabase
-        .from('posts')
-        .insert(postData)
-        .select()
-      
-      if (error) throw error
-      return data[0]
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['posts'])
-      navigate(createPageUrl("Home"))
-    }
-  })
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!content.trim()) return;
 
-  const handleFileUpload = async (files, type = 'photo') => {
-    if (media.length + files.length > 4) {
-      alert("Máximo de 4 fotos/vídeos!")
-      return
-    }
-
-    // Validar vídeos
-    if (type === 'video') {
-      for (let file of files) {
-        if (file.size > MAX_VIDEO_SIZE) {
-          alert(`Vídeo muito grande! Máximo 50MB. Tamanho: ${(file.size / 1024 / 1024).toFixed(1)}MB`)
-          return
-        }
-        if (!file.type.startsWith('video/')) {
-          alert("Apenas vídeos são permitidos!")
-          return
-        }
-      }
-    }
-
-    setIsUploading(true)
-    setUploadProgress(0)
-    
+    setIsLoading(true);
     try {
-      const uploadPromises = Array.from(files).map(async (file, index) => {
-        
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${Math.random()}.${fileExt}`
-        const bucket = type === 'video' ? 'post-videos' : 'post-photos'
-        
-        const { data, error } = await supabase.storage
-          .from(bucket)
-          .upload(fileName, file)
-
-        if (error) throw error
-
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from(bucket)
-          .getPublicUrl(fileName)
-
-        setUploadProgress(((index + 1) / files.length) * 100)
-        return { url: publicUrl, type }
-      })
-      
-      const urls = await Promise.all(uploadPromises)
-      setMedia([...media, ...urls])
-      setShowMediaOptions(false)
+      console.log('Criando post:', content);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      window.location.href = '/';
     } catch (error) {
-      console.error("Error uploading files:", error)
-      alert("Erro ao fazer upload. Tente novamente.")
+      console.error('Erro ao criar post:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsUploading(false)
-    setUploadProgress(0)
-  }
+  };
 
-  // ... O RESTANTE DO CÓDIGO (removeMedia, addExercise, updateExercise, removeExercise, handlePublish) PERMANECE IGUAL ...
-
-  const handlePublish = () => {
-    if (!description.trim()) {
-      alert("Adicione uma descrição!")
-      return
-    }
-
-    createPostMutation.mutate({
-      description,
-      photos: media.filter(m => m.type === 'photo').map(m => m.url),
-      videos: media.filter(m => m.type === 'video').map(m => m.url),
-      category,
-      exercises: exercises.filter(e => e.name.trim())
-    })
-  }
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">
+            Criar Nova Publicação
+          </h1>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+                Conteúdo da publicação
+              </label>
+              <textarea
+                id="content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Compartilhe seus pensamentos, treinos ou conquistas..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows="6"
+                required
+              />
+            </div>
+            
+            <div className="flex items-center justify-between pt-4">
+              <button
+                type="button"
+                onClick={() => window.location.href = '/'}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Cancelar
+              </button>
+              
+              <button
+                type="submit"
+                disabled={!content.trim() || isLoading}
+                className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Publicando...' : 'Publicar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
