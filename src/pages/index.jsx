@@ -1,15 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './Layout';
 import Login from './Login';
-import Register from './Register';
-import Feed from './Feed';
-import CreatePost from './CreatePost';
+import Home from './Home';
+import CreatePost from './CreatePost (1)';
 import MySubscriptions from './MySubscriptions';
 import LogWorkout from './LogWorkout';
 import WorkoutHistory from './WorkoutHistory';
 import ChallengeProof from './ChallengeProof';
-import InstructorAnalytics from './InstructorAnalytics';
-import Communities from './Communities';
+import InstructorAnalytics from './InstructorAnalytics (1)';
+import Communities from './Communities (1)';
 import ManageAds from './ManageAds';
 import PrivacyPolicy from './PrivacyPolicy';
 import PermissionsHelp from './PermissionsHelp';
@@ -23,35 +22,60 @@ import EditCommunity from './EditCommunity';
 import InstructorChat from './InstructorChat';
 import CreateWorkoutPlan from './CreateWorkoutPlan';
 import WelcomeScreen from './WelcomeScreen';
+import Profile from './Profile';
+import Explore from './Explore';
+import Notifications from './Notifications';
+import Settings from './Settings';
 
 function PagesContent() {
     return (
         <Layout>
             <Routes>
+                {/* Autenticação */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/create-post" element={<CreatePost />} />
-                <Route path="/" element={<Feed />} />
+                <Route path="/welcome" element={<WelcomeScreen />} />
+                <Route path="/account-type" element={<AccountTypeSelector />} />
                 
-                <Route path="/MySubscriptions" element={<MySubscriptions />} />
-                <Route path="/LogWorkout" element={<LogWorkout />} />
-                <Route path="/WorkoutHistory" element={<WorkoutHistory />} />
-                <Route path="/ChallengeProof" element={<ChallengeProof />} />
-                <Route path="/InstructorAnalytics" element={<InstructorAnalytics />} />
-                <Route path="/Communities" element={<Communities />} />
-                <Route path="/ManageAds" element={<ManageAds />} />
-                <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
-                <Route path="/PermissionsHelp" element={<PermissionsHelp />} />
-                <Route path="/CommunityView" element={<CommunityView />} />
-                <Route path="/AccountTypeSelector" element={<AccountTypeSelector />} />
-                <Route path="/InstructorPanel" element={<InstructorPanel />} />
-                <Route path="/TermsOfService" element={<TermsOfService />} />
-                <Route path="/DirectMessages" element={<DirectMessages />} />
-                <Route path="/ManageCommunityMembers" element={<ManageCommunityMembers />} />
-                <Route path="/EditCommunity" element={<EditCommunity />} />
-                <Route path="/InstructorChat" element={<InstructorChat />} />
-                <Route path="/CreateWorkoutPlan" element={<CreateWorkoutPlan />} />
-                <Route path="/WelcomeScreen" element={<WelcomeScreen />} />
+                {/* Páginas Principais */}
+                <Route path="/" element={<Home />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/settings" element={<Settings />} />
+                
+                {/* Posts e Conteúdo */}
+                <Route path="/create-post" element={<CreatePost />} />
+                
+                {/* Treinos e Planos */}
+                <Route path="/log-workout" element={<LogWorkout />} />
+                <Route path="/workout-history" element={<WorkoutHistory />} />
+                <Route path="/create-workout-plan" element={<CreateWorkoutPlan />} />
+                <Route path="/my-subscriptions" element={<MySubscriptions />} />
+                
+                {/* Comunidades */}
+                <Route path="/communities" element={<Communities />} />
+                <Route path="/community/:id" element={<CommunityView />} />
+                <Route path="/edit-community" element={<EditCommunity />} />
+                <Route path="/manage-members" element={<ManageCommunityMembers />} />
+                
+                {/* Instrutores */}
+                <Route path="/instructor-panel" element={<InstructorPanel />} />
+                <Route path="/instructor-analytics" element={<InstructorAnalytics />} />
+                <Route path="/instructor-chat" element={<InstructorChat />} />
+                
+                {/* Desafios */}
+                <Route path="/challenge-proof" element={<ChallengeProof />} />
+                
+                {/* Chat */}
+                <Route path="/messages" element={<DirectMessages />} />
+                
+                {/* Legal */}
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/permissions" element={<PermissionsHelp />} />
+                
+                {/* Ads */}
+                <Route path="/manage-ads" element={<ManageAds />} />
             </Routes>
         </Layout>
     );
