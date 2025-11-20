@@ -1,5 +1,5 @@
 import './App.css'
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom"
+import { Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { Toaster } from "sonner"
 import Login from "./pages/Login"
 import Home from "./pages/Home"
@@ -7,14 +7,14 @@ import CreatePost from "./pages/CreatePost"
 import { useEffect } from 'react'
 
 function App() {
-  const navigate = useNavigate()
+  const location = useLocation()
 
+  // REDIRECIONAMENTO FORÇADO
   useEffect(() => {
-    // FORÇAR redirecionamento para login na inicialização
-    if (window.location.pathname === '/' || window.location.pathname === '/create-post') {
-      navigate('/login', { replace: true })
+    if (location.pathname === '/' || location.pathname === '/create-post') {
+      window.location.href = '/login'
     }
-  }, [navigate])
+  }, [location])
 
   return (
     <>
@@ -29,3 +29,5 @@ function App() {
     </>
   )
 }
+
+export default App
