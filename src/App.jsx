@@ -1,5 +1,5 @@
 import './App.css'
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "sonner"
 import Login from "./pages/Login"
 import Home from "./pages/Home"
@@ -54,20 +54,18 @@ function PublicRoute({ children }) {
   return !user ? children : <Navigate to="/home" replace />
 }
 
-function App() {
+export default function App() {
   return (
     <>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
-          <Route path="/explore" element={<PrivateRoute><Explore /></PrivateRoute>} />
-          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-          <Route path="/create-post" element={<PrivateRoute><CreatePost /></PrivateRoute>} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+        <Route path="/explore" element={<PrivateRoute><Explore /></PrivateRoute>} />
+        <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+        <Route path="/create-post" element={<PrivateRoute><CreatePost /></PrivateRoute>} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
       <Toaster />
     </>
   )
