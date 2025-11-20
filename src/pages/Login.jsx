@@ -20,33 +20,23 @@ export default function Login() {
   const checkUser = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        navigate(createPageUrl("Home"));
-      }
-    } catch (error) {
-      console.log("Usuário não logado");
-    }
+      if (user) navigate(createPageUrl("Home"));
+    } catch (_) {}
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password
       });
-
       if (error) throw error;
-
-      if (data.user) {
-        navigate(createPageUrl("Home"));
-      }
-    } catch (error) {
-      console.error("Erro no login:", error);
-      setError(error.message || "Erro ao fazer login. Verifique suas credenciais.");
+      if (data.user) navigate(createPageUrl("Home"));
+    } catch (err) {
+      setError(err.message || "Erro ao fazer login. Verifique suas credenciais.");
     } finally {
       setIsLoading(false);
     }
@@ -55,15 +45,13 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
           redirectTo: ${window.location.origin}${createPageUrl("Home")}
         }
       });
-
       if (error) throw error;
-    } catch (error) {
-      console.error("Erro no login com Google:", error);
+    } catch (_) {
       setError("Erro ao fazer login com Google.");
     }
   };
@@ -75,12 +63,8 @@ export default function Login() {
           <div className="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center">
             <span className="text-4xl">💪</span>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Bem-vindo de volta!
-          </h1>
-          <p className="text-white/90">
-            Entre na sua conta para continuar
-          </p>
+          <h1 className="text-3xl font-bold text-white mb-2">Bem-vindo de volta!</h1>
+          <p className="text-white/90">Entre na sua conta para continuar</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
@@ -91,9 +75,7 @@ export default function Login() {
           )}
 
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Email
-            </label>
+            <label className="block text-white text-sm font-medium mb-2">Email</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <User className="h-5 w-5 text-white/70" />
@@ -110,9 +92,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Senha
-            </label>
+            <label className="block text-white text-sm font-medium mb-2">Senha</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock className="h-5 w-5 text-white/70" />
@@ -187,22 +167,10 @@ export default function Login() {
             className="w-full h-14 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
+              <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+              <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
             Continuar com Google
           </Button>
@@ -223,17 +191,11 @@ export default function Login() {
         <div className="text-center text-white/60 text-xs mt-6 space-y-1">
           <p>
             Ao entrar, você concorda com nossos{" "}
-            <button
-              onClick={() => navigate(createPageUrl("TermsOfService"))}
-              className="underline hover:text-white"
-            >
+            <button onClick={() => navigate(createPageUrl("TermsOfService"))} className="underline hover:text-white">
               Termos de Uso
-            </button>
-            {" "}e{" "}
-            <button
-              onClick={() => navigate(createPageUrl("PrivacyPolicy"))}
-              className="underline hover:text-white"
-            >
+            </button>{" "}
+            e{" "}
+            <button onClick={() => navigate(createPageUrl("PrivacyPolicy"))} className="underline hover:text-white">
               Política de Privacidade
             </button>
           </p>
@@ -242,3 +204,4 @@ export default function Login() {
     </div>
   );
 }
+```0
