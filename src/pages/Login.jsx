@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  const createPageUrl = (page) => /${page};
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -22,16 +22,13 @@ export default function Login() {
       return;
     }
 
-    window.location.href = createPageUrl("Home");
+    navigate("/home");
   };
 
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: ${window.location.origin}${createPageUrl("Home")}
-        }
+        provider: "google"
       });
       if (error) throw error;
     } catch {
@@ -83,8 +80,12 @@ export default function Login() {
         </button>
 
         <div className="mt-6 flex justify-between text-sm">
-          <a href="/register" className="text-blue-600">Criar conta</a>
-          <a href="/forgotpassword" className="text-blue-600">Esqueci a senha</a>
+          <button onClick={() => navigate("/register")} className="text-blue-600">
+            Criar conta
+          </button>
+          <button onClick={() => navigate("/forgotpassword")} className="text-blue-600">
+            Esqueci a senha
+          </button>
         </div>
       </div>
     </div>
