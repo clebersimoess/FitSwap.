@@ -18,7 +18,7 @@ export const Button = ({
 
   return (
     <button
-      className={`${baseClasses} ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+      className={${baseClasses} ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}}
       onClick={onClick}
       disabled={disabled}
       {...props}
