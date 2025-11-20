@@ -45,11 +45,12 @@ export default function Login() {
         <h1 className="mb-6 text-center text-2xl font-semibold">Login</h1>
 
         {error && (
-          <p className="mb-4 rounded-md bg-red-100 p-2 text-center text-red-600">
-            {error}
-          </p>
-        )}
-
+         const { error } = await supabase.auth.signInWithOAuth({
+  provider: "google",
+  options: {
+    redirectTo: ${window.location.origin}${createPageUrl("Home")}
+  }
+});
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <input
             type="email"
