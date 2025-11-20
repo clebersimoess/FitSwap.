@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/supabaseClient";
+import { supabase } from "@/api/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,6 @@ export default function Login() {
 
       if (error) throw error;
 
-      // Login successful
       if (data.user) {
         navigate(createPageUrl("Home"));
       }
@@ -72,7 +71,6 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FF6B35] to-[#FF006E] flex items-center justify-center p-4">
       <div className="max-w-md w-full">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center">
             <span className="text-4xl">💪</span>
@@ -85,16 +83,13 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-6">
-          {/* Error Message */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
               <p className="text-red-700 text-sm">{error}</p>
             </div>
           )}
 
-          {/* Email Field */}
           <div>
             <label className="block text-white text-sm font-medium mb-2">
               Email
@@ -114,7 +109,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Password Field */}
           <div>
             <label className="block text-white text-sm font-medium mb-2">
               Senha
@@ -145,7 +139,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Remember & Forgot */}
           <div className="flex items-center justify-between">
             <label className="flex items-center">
               <input
@@ -163,7 +156,6 @@ export default function Login() {
             </button>
           </div>
 
-          {/* Login Button */}
           <Button
             type="submit"
             disabled={isLoading}
@@ -179,7 +171,6 @@ export default function Login() {
             )}
           </Button>
 
-          {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/20"></div>
@@ -189,7 +180,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Google Login */}
           <Button
             type="button"
             onClick={handleGoogleLogin}
@@ -218,7 +208,6 @@ export default function Login() {
           </Button>
         </form>
 
-        {/* Sign Up Link */}
         <div className="text-center mt-8">
           <p className="text-white/80">
             Não tem uma conta?{" "}
@@ -231,7 +220,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Legal Links */}
         <div className="text-center text-white/60 text-xs mt-6 space-y-1">
           <p>
             Ao entrar, você concorda com nossos{" "}
