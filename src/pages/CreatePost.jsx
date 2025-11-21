@@ -20,8 +20,8 @@ export default function CreatePost() {
 
   const uploadMedia = async (file, userId) => {
     const ext = file.name.split(".").pop();
-    const fileName = ${userId}-${Date.now()}.${ext};
-    const filePath = ${fileName};
+    const fileName = `${userId}-${Date.now()}.${ext}`;
+    const filePath = `${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from("posts")
@@ -92,7 +92,7 @@ export default function CreatePost() {
 
           <input
             type="file"
-            accept="image/, video/"
+            accept="image/*, video/*"
             className="mt-4"
             onChange={handleMediaChange}
           />
