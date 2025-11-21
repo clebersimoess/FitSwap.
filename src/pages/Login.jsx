@@ -1,93 +1,70 @@
-import React, { useState } from "react";
-import { supabase } from "../lib/supabaseClient";
-import { useNavigate } from "react-router-dom";
+import './App.css'
+import { Routes, Route, Navigate, useLocation } from "react-router-dom"
+import { Toaster } from "sonner"
+import Login from "./pages/Login"
+import Home from "./pages/Home"
+import CreatePost from "./pages/CreatePost"
+import { useEffect, useState } from 'react'
+import { supabase } from "./lib/supabaseClient"
 
-export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
+function RequireAuth({ children }) {
+  const [session, setSession] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const location = useLocation()
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setLoading(false)
+    })
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
 
-    if (error) {
-      setError("Email ou senha incorretos.");
-      return;
-    }
+    return () => subscription.unsubscribe()
+  }, [])
 
-    navigate("/home");
-  };
+  if (loading) return <div>Carregando...</div>
 
-  const handleGoogleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google"
-      });
-      if (error) throw error;
-    } catch {
-      setError("Erro ao fazer login com Google.");
-    }
-  };
+  if (!session) {
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  return children
+}
+
+function App() {
+  const [session, setSession] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (loading) return <div>Carregando...</div>
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-6">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
-        <h1 className="mb-6 text-center text-2xl font-semibold">Login</h1>
-
-        {error && (
-          <div className="mb-4 rounded-md bg-red-100 p-3 text-red-700">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full rounded-md border px-3 py-2"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <input
-            type="password"
-            placeholder="Senha"
-            className="w-full rounded-md border px-3 py-2"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          <button
-            type="submit"
-            className="w-full rounded-md bg-blue-600 py-2 font-medium text-white"
-          >
-            Entrar
-          </button>
-        </form>
-
-        <button
-          onClick={handleGoogleLogin}
-          className="mt-4 w-full rounded-md bg-red-600 py-2 font-medium text-white"
-        >
-          Entrar com Google
-        </button>
-
-        <div className="mt-6 flex justify-between text-sm">
-          <button onClick={() => navigate("/register")} className="text-blue-600">
-            Criar conta
-          </button>
-          <button onClick={() => navigate("/forgotpassword")} className="text-blue-600">
-            Esqueci a senha
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    <>
+      <Routes>
+        <Route path="/" element={session ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} />
+        <Route path="/login" element={session ? <Navigate to="/home" replace /> : <Login />} />
+        <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
+        <Route path="/create-post" element={<RequireAuth><CreatePost /></RequireAuth>} />
+        <Route path="*" element={<Navigate to={session ? "/home" : "/login"} replace />} />
+      </Routes>
+      <Toaster />
+    </>
+  )
 }
+
+export default App
