@@ -17,7 +17,7 @@ function RequireAuth({ children }) {
 }
 
 function App() {
-  const isAuthenticated = Boolean(localStorage.getItem('supabase.auth.token'))
+  const isAuthenticated = false
 
   return (
     <>
