@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
+import "../App.css";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -71,7 +72,8 @@ export default function Login() {
           Não tem conta?{" "}
           <span
             className="text-blue-600 font-semibold cursor-pointer hover:text-blue-800 transition duration-200"
-            onClick={() => navigate("/register")}
+            onClick={() => navigate("/register")
+            }
           >
             Cadastrar
           </span>
