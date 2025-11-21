@@ -15,16 +15,15 @@ export default function Home() {
   }, []);
 
   const checkUser = async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (!error) setUser(data.user);
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) setUser(data.user);
   };
 
   const loadPosts = async () => {
     const { data, error } = await supabase
       .from("posts")
       .select("*")
-      .order("created_at", { ascending: false })
-      .limit(20);
+      .order("created_at", { ascending: false });
 
     if (!error) setPosts(data || []);
     setLoading(false);
@@ -60,7 +59,9 @@ export default function Home() {
             ) : (
               <>
                 <Button onClick={() => navigate("/login")}>Entrar</Button>
-                <Button onClick={() => navigate("/register")}>Cadastrar</Button>
+                <Button onClick={() => navigate("/register")}>
+                  Cadastrar
+                </Button>
               </>
             )}
           </div>
@@ -81,27 +82,30 @@ export default function Home() {
                 key={post.id}
                 className="bg-white p-6 rounded-lg shadow border"
               >
-                <h3 className="font-semibold text-lg mb-2">{post.title || "Sem título"}</h3>
-                <p className="text-gray-700 mb-3">{post.content}</p>
-
-                {post.image_url && (
-                  <img
-                    src={post.image_url}
-                    alt="Post"
-                    className="rounded-lg w-full mb-3"
-                  />
+                {post.content && (
+                  <p className="text-gray-700 mb-3">{post.content}</p>
                 )}
 
-                {post.video_url && (
+                {post.media_url &&
+                  (post.media_url.endsWith(".mp4") ||
+                  post.media_url.endsWith(".mov") ||
+                  post.media_url.includes("video")) ? (
                   <video
-                    src={post.video_url}
+                    src={post.media_url}
                     controls
                     className="rounded-lg w-full mb-3"
                   />
-                )}
+                ) : post.media_url ? (
+                  <img
+                    src={post.media_url}
+                    alt="Post media"
+                    className="rounded-lg w-full mb-3"
+                  />
+                ) : null}
 
                 <p className="text-sm text-gray-500">
-                  Postado em: {new Date(post.created_at).toLocaleString()}
+                  Postado em:{" "}
+                  {new Date(post.created_at).toLocaleString()}
                 </p>
               </div>
             ))}
