@@ -21,7 +21,7 @@ export default function CreatePost() {
   const uploadMedia = async (file, userId) => {
     const ext = file.name.split(".").pop();
     const fileName = ${userId}-${Date.now()}.${ext};
-    const filePath = fileName;
+    const filePath = ${fileName};
 
     const { error: uploadError } = await supabase.storage
       .from("posts")
