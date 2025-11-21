@@ -1,70 +1,83 @@
-import "../App.css";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Toaster } from "sonner";
-import Login from "../pages/Login";
-import Home from "../pages/Home";
-import CreatePost from "../pages/CreatePost";
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { useNavigate } from "react-router-dom";
+import "../App.css";
 
-function RequireAuth({ children }) {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const location = useLocation();
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      setError("Email ou senha inválidos");
       setLoading(false);
-    });
+      return;
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) return <div>Carregando...</div>;
-
-  if (!session) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return children;
-}
-
-function App() {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) return <div>Carregando...</div>;
+    navigate("/home");
+  };
 
   return (
-    <>
-      <Routes>
-        <Route path="/" element={session ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} />
-        <Route path="/login" element={session ? <Navigate to="/home" replace /> : <Login />} />
-        <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
-        <Route path="/create-post" element={<RequireAuth><CreatePost /></RequireAuth>} />
-        <Route path="*" element={<Navigate to={session ? "/home" : "/login"} replace />} />
-      </Routes>
-      <Toaster />
-    </>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md">
+        <h1 className="text-2xl font-bold text-center mb-6">Entrar</h1>
+
+        {error && (
+          <p className="text-red-500 text-center mb-4">
+            {error}
+          </p>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <input
+            type="email"
+            placeholder="Seu email"
+            className="w-full p-3 border rounded-lg"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <input
+            type="password"
+            placeholder="Senha"
+            className="w-full p-3 border rounded-lg"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg"
+            disabled={loading}
+          >
+            {loading ? "Entrando..." : "Entrar"}
+          </button>
+        </form>
+
+        <p className="text-center mt-4 text-gray-600">
+          Não tem conta?{" "}
+          <span
+            className="text-blue-600 font-semibold cursor-pointer"
+            onClick={() => navigate("/register")}
+          >
+            Cadastrar
+          </span>
+        </p>
+      </div>
+    </div>
   );
 }
-
-export default App;
