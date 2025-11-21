@@ -1,9 +1,9 @@
 import "../App.css";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
-import Login from "./pages/Login";
-import Home from "./pages/Home";
-import CreatePost from "./pages/CreatePost";
+import Login from "../pages/Login";
+import Home from "../pages/Home";
+import CreatePost from "../pages/CreatePost";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
