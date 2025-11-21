@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
-import "../App.css";
+import "/src/App.css";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -44,7 +44,7 @@ export default function Login() {
           <input
             type="email"
             placeholder="Seu email"
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -53,7 +53,7 @@ export default function Login() {
           <input
             type="password"
             placeholder="Senha"
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -61,7 +61,7 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading}
           >
             {loading ? "Entrando..." : "Entrar"}
@@ -71,7 +71,7 @@ export default function Login() {
         <p className="text-center mt-4 text-gray-600">
           Não tem conta?{" "}
           <span
-            className="text-blue-600 font-semibold cursor-pointer"
+            className="text-blue-600 font-semibold cursor-pointer hover:text-blue-800 transition duration-200"
             onClick={() => navigate("/register")}
           >
             Cadastrar
