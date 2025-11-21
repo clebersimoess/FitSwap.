@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
-import "../App.css";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -30,21 +29,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold text-center mb-6">Entrar</h1>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb', padding: '0 1rem' }}>
+      <div style={{ width: '100%', maxWidth: '28rem', backgroundColor: 'white', padding: '2rem', borderRadius: '0.75rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center', marginBottom: '1.5rem' }}>Entrar</h1>
 
         {error && (
-          <p className="text-red-500 text-center mb-4">
+          <p style={{ color: '#ef4444', textAlign: 'center', marginBottom: '1rem' }}>
             {error}
           </p>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <input
             type="email"
             placeholder="Seu email"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', outline: 'none' }}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -53,7 +52,7 @@ export default function Login() {
           <input
             type="password"
             placeholder="Senha"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', outline: 'none' }}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -61,19 +60,26 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            style={{ 
+              width: '100%', 
+              backgroundColor: loading ? '#9ca3af' : '#2563eb', 
+              color: 'white', 
+              padding: '0.75rem', 
+              borderRadius: '0.5rem',
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
             disabled={loading}
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
 
-        <p className="text-center mt-4 text-gray-600">
+        <p style={{ textAlign: 'center', marginTop: '1rem', color: '#6b7280' }}>
           Não tem conta?{" "}
           <span
-            className="text-blue-600 font-semibold cursor-pointer hover:text-blue-800 transition duration-200"
-            onClick={() => navigate("/register")
-            }
+            style={{ color: '#2563eb', fontWeight: '600', cursor: 'pointer' }}
+            onClick={() => navigate("/register")}
           >
             Cadastrar
           </span>
