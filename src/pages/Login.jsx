@@ -1,57 +1,57 @@
-import './App.css'
-import { Routes, Route, Navigate, useLocation } from "react-router-dom"
-import { Toaster } from "sonner"
-import Login from "./pages/Login"
-import Home from "./pages/Home"
-import CreatePost from "./pages/CreatePost"
-import { useEffect, useState } from 'react'
-import { supabase } from "./lib/supabaseClient"
+import "../App.css";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Toaster } from "sonner";
+import Login from "./pages/Login";
+import Home from "./pages/Home";
+import CreatePost from "./pages/CreatePost";
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 function RequireAuth({ children }) {
-  const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const location = useLocation()
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setLoading(false)
-    })
+      setSession(session);
+      setLoading(false);
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
+      setSession(session);
+    });
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => subscription.unsubscribe();
+  }, []);
 
-  if (loading) return <div>Carregando...</div>
+  if (loading) return <div>Carregando...</div>;
 
   if (!session) {
-    return <Navigate to="/login" state={{ from: location }} replace />
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return children
+  return children;
 }
 
 function App() {
-  const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setLoading(false)
-    })
+      setSession(session);
+      setLoading(false);
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
+      setSession(session);
+    });
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => subscription.unsubscribe();
+  }, []);
 
-  if (loading) return <div>Carregando...</div>
+  if (loading) return <div>Carregando...</div>;
 
   return (
     <>
@@ -64,7 +64,7 @@ function App() {
       </Routes>
       <Toaster />
     </>
-  )
+  );
 }
 
-export default App
+export default App;
