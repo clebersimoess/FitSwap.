@@ -37,7 +37,7 @@ export default function TodayPaid() {
     }
     setLoading(true);
 
-    const filename = Date.now() + "_" + file.name;
+    const filename = `today_${Date.now()}_${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from("posts")
       .upload(filename, file);
@@ -96,7 +96,7 @@ export default function TodayPaid() {
       <button
         onClick={handleSubmit}
         disabled={loading}
-        className="px-4 py-2 bg-blue-600 text-white rounded w-full"
+        className="px-4 py-2 bg-gradient-to-r from-pink-500 to-yellow-400 text-white rounded w-full"
       >
         {loading ? "Enviando..." : "Enviar"}
       </button>
