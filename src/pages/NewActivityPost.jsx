@@ -37,7 +37,7 @@ export default function NewActivityPost() {
   const uploadToStorage = async f => {
     try {
       const ext = f.name.split('.').pop();
-      const key = proofs/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext};
+      const key = `proofs/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { data, error } = await supabase.storage.from('public').upload(key, f, { cacheControl: '3600', upsert: false });
       if (error) throw error;
       const { publicUrl } = supabase.storage.from('public').getPublicUrl(key);
@@ -54,7 +54,7 @@ export default function NewActivityPost() {
         const dataUrl = reader.result;
         const proofs = JSON.parse(localStorage.getItem('fs_workout_proofs') || '[]');
         const entry = {
-          id: local-${Date.now()},
+          id: `local-${Date.now()}`,
           author: JSON.parse(localStorage.getItem('fs_session') || 'null'),
           media_url: dataUrl,
           media_type: f.type.startsWith('video') ? 'video' : 'image',
@@ -124,10 +124,10 @@ export default function NewActivityPost() {
         <h2 className="text-xl font-semibold mb-4">Publicar atividade</h2>
         <form onSubmit={handleSubmit}>
           <label className="block mb-2">Foto ou vídeo</label>
-          <input accept="image/,video/" type="file" onChange={handleFile} />
+          <input accept="image/*,video/*" type="file" onChange={handleFile} />
           {preview && (
             <div className="mt-3">
-              {file && file.type.startsWith('video') ? (
+              {file && file.type.startsWith("video") ? (
                 <video src={preview} controls className="w-full rounded" />
               ) : (
                 <img src={preview} alt="preview" className="w-full rounded object-cover" />
