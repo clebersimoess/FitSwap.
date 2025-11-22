@@ -24,7 +24,7 @@ export default function Feed() {
         console.warn("Supabase posts fetch error:", error);
         const cache = localStorage.getItem("fs_posts_cache");
         if (cache) setPosts(JSON.parse(cache));
-        if (showToast) toast.error("Unable to load latest posts; showing cached content.");
+        if (showToast) toast.error("Não foi possível carregar os posts; mostrando conteúdo em cache.");
       } else {
         setPosts(data || []);
         localStorage.setItem("fs_posts_cache", JSON.stringify(data || []));
@@ -33,7 +33,7 @@ export default function Feed() {
       console.error("loadPosts error:", err);
       const cache = localStorage.getItem("fs_posts_cache");
       if (cache) setPosts(JSON.parse(cache));
-      if (showToast) toast.error("Network error while loading posts.");
+      if (showToast) toast.error("Erro de rede ao carregar posts.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -51,7 +51,7 @@ export default function Feed() {
         console.warn("Supabase proofs fetch error:", error);
         const cache = localStorage.getItem("fs_proofs_cache");
         if (cache) setProofs(JSON.parse(cache));
-        if (showToast) toast.error("Unable to load latest activities; showing cached content.");
+        if (showToast) toast.error("Não foi possível carregar as atividades; mostrando cache.");
       } else {
         const approved = (data || []).filter(p => p.approved === undefined || p.approved === true);
         setProofs(approved);
@@ -61,7 +61,7 @@ export default function Feed() {
       console.error("loadProofs error:", err);
       const cache = localStorage.getItem("fs_proofs_cache");
       if (cache) setProofs(JSON.parse(cache));
-      if (showToast) toast.error("Network error while loading activities.");
+      if (showToast) toast.error("Erro de rede ao carregar atividades.");
     }
   }
 
@@ -73,7 +73,7 @@ export default function Feed() {
       .channel("public:posts")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, (payload) => {
         setPosts(prev => [payload.new, ...prev]);
-        toast.success("New post available");
+        toast.success("Novo post disponível");
       })
       .subscribe();
 
@@ -83,7 +83,7 @@ export default function Feed() {
         const p = payload.new;
         if (p.approved === undefined || p.approved === true) {
           setProofs(prev => [p, ...prev]);
-          toast.success("New activity posted");
+          toast.success("Nova atividade publicada");
         }
       })
       .subscribe();
@@ -101,15 +101,15 @@ export default function Feed() {
         <div className="flex items-center gap-2">
           <button onClick={() => navigate("/new-activity")} className="px-3 py-1 bg-gradient-to-r from-pink-500 to-yellow-400 text-white rounded">New</button>
           <button onClick={() => navigate("/today-paid")} className="px-3 py-1 bg-green-600 text-white rounded">Hoje tá pago</button>
-          <button onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }} className="px-3 py-1 bg-red-600 text-white rounded">Sign out</button>
+          <button onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }} className="px-3 py-1 bg-red-600 text-white rounded">Sair</button>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto py-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium">Latest posts</h3>
+          <h3 className="text-lg font-medium">Últimos posts</h3>
           <div>
-            <button onClick={() => { setRefreshing(true); loadPosts(true); loadProofs(true); }} className="px-3 py-1 border rounded">{refreshing ? "Refreshing..." : "Refresh"}</button>
+            <button onClick={() => { setRefreshing(true); loadPosts(true); loadProofs(true); }} className="px-3 py-1 border rounded">{refreshing ? "Atualizando..." : "Atualizar"}</button>
           </div>
         </div>
 
@@ -130,7 +130,7 @@ export default function Feed() {
           </section>
         )}
 
-        {!loading && posts.length === 0 && <div className="text-center py-8">No posts yet. Be the first!</div>}
+        {!loading && posts.length === 0 && <div className="text-center py-8">Nenhum post ainda. Seja o primeiro!</div>}
         {!loading && posts.map((p) => <PostCard key={p.id || p.created_at} post={p} />)}
       </main>
     </div>
