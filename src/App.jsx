@@ -8,6 +8,7 @@ import Feed from "./pages/Feed";
 import CreatePost from "./pages/CreatePost";
 import NewActivityPost from "./pages/NewActivityPost";
 import TodayPaid from "./pages/TodayPaid";
+import WelcomeModal from "./components/WelcomeModal";
 
 function RequireAuth({ children, isAuth }) {
   const location = useLocation();
